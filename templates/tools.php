@@ -54,7 +54,7 @@
 
 	<h3><?php p($l->t('Apps that connect')); ?></h3>
 	<p class="settings-hint">
-		<?php p($l->t('Each app that asks AI-Hub can have its own AI and model. What is left as "Server-wide" follows the choice above. Nextcloud\'s own Task Processing (the Assistant and every app written against the standard API) is listed as one app. The Base series is listed from the start and greyed out until it is installed.')); ?>
+		<?php p($l->t('Each app that asks AI-Hub can have its own AI and model. What is left as "Server-wide" follows the choice above. Nextcloud\'s own Task Processing (the Assistant and every app written against the standard API) is listed as one app. The Base series and Talk-Bot are listed from the start and greyed out until installed.')); ?>
 	</p>
 	<div id="tb-apps-result" role="status" aria-live="polite"></div>
 	<table id="tb-apps" class="tb-hidden">

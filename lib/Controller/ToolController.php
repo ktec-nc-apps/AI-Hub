@@ -31,8 +31,8 @@ use OCP\IRequest;
 class ToolController extends Controller {
 	/** The name Nextcloud's own Task Processing asks under. */
 	public const TASK_PROCESSING = 'taskprocessing';
-	/** The Base series is listed from the start, greyed out until it is installed (the owner, 2026-10-03). */
-	public const BASE_APPS = ['editbase' => 'EditBase', 'regibase' => 'RegiBase', 'formulabase' => 'FormulaBase', 'netbase' => 'NetBase'];
+	/** The Base series and Talk-Bot are listed from the start, greyed out until installed (the owner, 2026-10-03). */
+	public const BASE_APPS = ['editbase' => 'EditBase', 'regibase' => 'RegiBase', 'formulabase' => 'FormulaBase', 'netbase' => 'NetBase', 'ktec_talkbot' => 'Talk-Bot'];
 
 	public function __construct(
 		string $appName,
@@ -185,7 +185,7 @@ class ToolController extends Controller {
 	private function listApps(): array {
 		$seen = $this->config->getAppsSeen();
 		$own = $this->config->getAppEngines();
-		// The Base series first, then Nextcloud's own Task Processing, then whatever else has connected.
+		// The Base series and Talk-Bot first, then Nextcloud's own Task Processing, then whatever else has connected.
 		$ids = array_keys(self::BASE_APPS);
 		$ids[] = self::TASK_PROCESSING;
 		$rest = array_values(array_diff(array_unique(array_merge(array_keys($seen), array_keys($own))), $ids));
@@ -209,7 +209,7 @@ class ToolController extends Controller {
 		return $out;
 	}
 
-	/** The name shown for an app: the Base series by name, others by what their info.xml says. */
+	/** The name shown for an app: our own apps by name, others by what their info.xml says. */
 	private function labelOf(string $id): string {
 		if ($id === self::TASK_PROCESSING) {
 			return $this->l->t('Nextcloud Task Processing (Assistant and the standard API)');
