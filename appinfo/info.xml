@@ -3,7 +3,6 @@
 	<id>ai_hub</id>
 	<name>AI-Hub</name>
 	<summary>One AI gateway for every app in your Nextcloud: apps hand it a scenario and a question</summary>
-	<summary lang="ja">Nextcloud のすべてのアプリのための AI ゲートウェイ。アプリはシナリオと質問を渡すだけ</summary>
 	<description><![CDATA[
 **AI-Hub** is one AI gateway for every app on your Nextcloud.
 
@@ -24,27 +23,6 @@ The engine, its key and the model (picked from the list the key can really use, 
 An app reaches only its own scenarios and the tools it registered. Tools run with the rights of the person asking, through the app's own code. Web search, where allowed, runs on the provider's side. Keys are stored encrypted and never leave the server.
 
 Talk-Bot and EditBase from the same makers are moving their AI onto AI-Hub.
-]]></description>
-	<description lang="ja"><![CDATA[
-**AI-Hub** は、Nextcloud のすべてのアプリのための AI ゲートウェイです。
-
-アプリはモデルと直接やり取りしません。**シナリオ**（アシスタントが何者で、どの道具を使ってよく、どんな形で答えるか）を登録し、あとは利用者の言葉を送るだけです。AI-Hub がエンジンを選び、会話とシナリオが許した道具を回し、答えが形に合っているかを確かめて返します。管理者がつないだ物が Claude でも Gemini でも OpenAI 互換のサービスでも、サーバー上のコマンドライン定額契約でも、同じシナリオがそのまま動きます。
-
-### 3つの入口
-- **同じサーバーのアプリから（PHP）**：シナリオを登録し、`ask()` と `result()`。
-- **HTTP から（OCS）**：`/ocs/v2.php/apps/ai_hub/api/v1/ask` と `…/result/{id}`。
-- **Nextcloud 本体の Task Processing API から**：文章→文章と会話の仕事の提供元になるので、Nextcloud Assistant など標準の API で書かれたアプリも、つないだモデルを使えます。
-
-### エンジン
-Anthropic Claude と Google Gemini（それぞれの API）。OpenAI 互換のサービス（OpenRouter・DeepSeek・Mistral・Groq・OpenAI、または自前のサーバーの Ollama / vLLM / LM Studio）。サーバーに入れた Claude Code / Gemini CLI の定額契約で全員に答えることもできます。
-
-### すべてのアプリに共通の設定画面
-エンジン・キー・モデル（キーで実際に使える一覧から選び、接続テスト）、誰が聞けるか、どのアプリが聞けるか、1分あたりの回数、同時に進める数。接続してきたアプリごとに、別の AI とモデルを与えることもできます。
-
-### 安全
-アプリが届くのは自分のシナリオと、自分が登録した道具だけ。道具は聞いた人の権限で、そのアプリ自身のコードを通して動きます。Web 検索は、許した場合も提供元の側で行います。キーは暗号化して保存し、外へは出しません。
-
-同じ作者の Talk-Bot と EditBase は、AI をこの AI-Hub の上へ移しつつあります。
 ]]></description>
 	<version>0.0.1</version>
 	<licence>agpl</licence>
