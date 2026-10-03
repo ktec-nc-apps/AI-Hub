@@ -31,7 +31,7 @@ class OpenAiCompatEngine extends AbstractHttpEngine {
 		}
 		$messages[] = ['role' => 'user', 'content' => $message];
 
-		$model = $this->config->getModel('openai');
+		$model = $this->model('openai');
 		if ($model === '') {
 			return TurnResult::error('No model is selected. Pick one in the AI-Hub admin settings.');
 		}

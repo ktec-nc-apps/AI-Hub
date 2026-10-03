@@ -73,6 +73,7 @@ The engines are the ones Talk-Bot has run since 2026; they move here, and Talk-B
 One settings page, for all apps:
 
 - the engine, its key or its command-line tool, and the model, picked from the list the key can really use, with a connection test;
+- **each app its own AI and model**: every app that connects is listed, and can be given an engine (Claude, Gemini, an OpenAI-compatible endpoint or the command-line tool) and a model of its own instead of the server-wide ones, each with its own connection test; Nextcloud's own Task Processing counts as one app;
 - **who** may use the hub (everyone, or chosen users), **how often** (questions per user per minute) and **how many at once**;
 - **which apps** may ask — once the list is set, an app that is not on it gets nothing;
 - planned: a log of questions by app and user (counts and errors, never the words), so a bill can be explained.
@@ -145,6 +146,7 @@ AI-Hub は **Nextcloud 本体の Task Processing API の提供元（Provider）*
 すべてのアプリに共通の設定画面を一つ：
 
 - エンジン、そのキーかコマンドラインの道具、モデル（キーで実際に使える物の一覧から選ぶ）、接続テスト。
+- **アプリごとに別の AI とモデル**：接続してきたアプリを一覧に並べ、サーバー共通とは別のエンジン（Claude・Gemini・OpenAI 互換・コマンドラインの道具）とモデルを与えられます。行ごとに接続テストもできます。Nextcloud 本体の Task Processing も一つのアプリとして数えます。
 - **誰が**使えるか（全員か、選んだユーザー）、**何回まで**（利用者ごとに1分あたり）、**同時にいくつまで**。
 - **どのアプリが**聞いてよいか。一覧を書けば、無いアプリには何も渡しません。
 - （予定）アプリ別・利用者別の記録（回数と誤りだけ。言葉は残しません）。請求の説明に使えます。

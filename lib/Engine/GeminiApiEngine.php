@@ -43,7 +43,7 @@ class GeminiApiEngine extends AbstractHttpEngine {
 
 		// The key goes in a header, never in the address: an error from the HTTP
 		// client repeats the address, and it was posted to the room (review T1).
-		$url = self::BASE . '/models/' . rawurlencode($this->config->getModel('gemini')) . ':generateContent';
+		$url = self::BASE . '/models/' . rawurlencode($this->model('gemini')) . ':generateContent';
 
 		$body = [
 			'systemInstruction' => ['parts' => [['text' => $systemPrompt]]],

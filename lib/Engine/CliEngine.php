@@ -43,12 +43,19 @@ class CliEngine implements IEngine {
 		'gemini-2.0-flash',
 	];
 
+	/** An app's own choice of model, when it has one. */
+	private ?string $model = null;
+
 	public function __construct(
 		private ConfigService $config,
 		private ITempManager $tempManager,
 		private LoggerInterface $logger,
 		private string $provider,
 	) {
+	}
+
+	public function useModel(string $model): void {
+		$this->model = $model !== '' ? $model : null;
 	}
 
 	public function getName(): string {
@@ -62,7 +69,7 @@ class CliEngine implements IEngine {
 		}
 
 		$prompt = $this->buildPrompt($history, $message);
-		$model = $this->config->getModel($this->provider);
+		$model = $this->model ?? $this->config->getModel($this->provider);
 		$tools = $elevated ? $this->config->getAdminTools() : $this->config->getUserTools();
 		if (array_key_exists('search', $options)) {
 			// Asked for by another app (AssistantService): its tools are exactly what it

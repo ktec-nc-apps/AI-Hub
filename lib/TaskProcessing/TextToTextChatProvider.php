@@ -27,7 +27,7 @@ class TextToTextChatProvider extends TextToTextProvider {
 		if (trim($message) === '') {
 			throw new \RuntimeException('Nothing to answer.');
 		}
-		$status = $this->hub->status();
+		$status = $this->hub->status('taskprocessing');
 		if (!$status['ready']) {
 			throw new \RuntimeException('AI-Hub is not ready: ' . $status['reason']);
 		}
@@ -44,7 +44,7 @@ class TextToTextChatProvider extends TextToTextProvider {
 			}
 			$role = $role === 'user' ? 'assistant' : 'user';
 		}
-		$result = $this->engines->get()->run($history, $message, $system);
+		$result = $this->engines->forApp('taskprocessing')->run($history, $message, $system);
 		if (!$result->isOk()) {
 			throw new \RuntimeException($result->detail !== '' ? $result->detail : 'The model gave no answer.');
 		}

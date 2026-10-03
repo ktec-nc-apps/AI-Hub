@@ -18,7 +18,7 @@ An app does not talk to a model. It registers a **scenario** — what the assist
 Anthropic Claude and Google Gemini through their own APIs; any OpenAI-compatible endpoint (OpenRouter, DeepSeek, Mistral, Groq, OpenAI, or Ollama / vLLM / LM Studio on your own server); or a Claude Code / Gemini CLI subscription installed on the server, so a flat-rate plan answers everyone.
 
 ### One settings page for all apps
-The engine, its key and the model (picked from the list the key can really use, with a connection test); who may ask, which apps may ask, questions per minute and answers in progress at once.
+The engine, its key and the model (picked from the list the key can really use, with a connection test); who may ask, which apps may ask, questions per minute and answers in progress at once. Each app that connects can be given an AI and a model of its own.
 
 ### Safety
 An app reaches only its own scenarios and the tools it registered. Tools run with the rights of the person asking, through the app's own code. Web search, where allowed, runs on the provider's side. Keys are stored encrypted and never leave the server.
@@ -39,7 +39,7 @@ Talk-Bot and EditBase from the same makers are moving their AI onto AI-Hub.
 Anthropic Claude と Google Gemini（それぞれの API）。OpenAI 互換のサービス（OpenRouter・DeepSeek・Mistral・Groq・OpenAI、または自前のサーバーの Ollama / vLLM / LM Studio）。サーバーに入れた Claude Code / Gemini CLI の定額契約で全員に答えることもできます。
 
 ### すべてのアプリに共通の設定画面
-エンジン・キー・モデル（キーで実際に使える一覧から選び、接続テスト）、誰が聞けるか、どのアプリが聞けるか、1分あたりの回数、同時に進める数。
+エンジン・キー・モデル（キーで実際に使える一覧から選び、接続テスト）、誰が聞けるか、どのアプリが聞けるか、1分あたりの回数、同時に進める数。接続してきたアプリごとに、別の AI とモデルを与えることもできます。
 
 ### 安全
 アプリが届くのは自分のシナリオと、自分が登録した道具だけ。道具は聞いた人の権限で、そのアプリ自身のコードを通して動きます。Web 検索は、許した場合も提供元の側で行います。キーは暗号化して保存し、外へは出しません。

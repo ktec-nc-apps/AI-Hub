@@ -88,8 +88,12 @@ class HubService {
 			'tools' => $tools,
 			'answer' => is_array($spec['answer'] ?? null) ? $spec['answer'] : null,
 			'search' => !empty($spec['search']),
-			'language' => is_string($spec['language'] ?? null) ? $spec['language'] : null,
+			// a code: answer in that language; null: follow the person; false: the
+			// scenario's own prompt says it, so the hub adds nothing
+			'language' => ($spec['language'] ?? null) === false ? false : (is_string($spec['language'] ?? null) ? $spec['language'] : null),
 		];
+		// So the settings page can list the apps that connect and give each its own engine.
+		$this->config->noteAppSeen($app, array_keys($this->scenarios[$app]));
 	}
 
 	public function hasScenario(string $app, string $name): bool {
@@ -104,11 +108,20 @@ class HubService {
 	// ---- what can be asked now ---------------------------------------------------
 
 	/**
+	 * What can be asked now -- for one app (its own choice of AI and model, or the
+	 * server-wide one) or, with no app, for the server-wide settings.
+	 *
 	 * @return array{ready: bool, reason: string, provider: string, mode: string, model: string, search: bool}
 	 */
-	public function status(): array {
-		$provider = $this->config->getProvider();
-		$mode = $this->config->getMode();
+	public function status(?string $app = null): array {
+		if ($app !== null) {
+			$e = $this->config->getAppEngine($app);
+			[$provider, $mode, $model] = [$e['provider'], $e['mode'], $e['model']];
+		} else {
+			$provider = $this->config->getProvider();
+			$mode = $this->config->getMode();
+			$model = $this->config->getModel($provider);
+		}
 		$reason = '';
 		if ($mode === 'cli') {
 			if ($this->config->getCliPath($provider) === '') {
@@ -119,7 +132,7 @@ class HubService {
 			if ($this->config->getApiKey($provider) === '' && $provider !== 'openai') {
 				$reason = 'no-key';
 			}
-			if ($provider === 'openai' && $this->config->getModel('openai') === '') {
+			if ($model === '') {
 				$reason = 'no-model';
 			}
 			$search = $provider === 'claude' || $provider === 'gemini';
@@ -132,7 +145,7 @@ class HubService {
 			'reason' => $reason,
 			'provider' => $provider,
 			'mode' => $mode,
-			'model' => $this->config->getModel($provider),
+			'model' => $model,
 			'search' => $search,
 		];
 	}
@@ -157,7 +170,7 @@ class HubService {
 	 * @return array{id?: string, error?: string} error: not-ready | user-not-allowed | app-not-allowed | no-scenario | empty | busy
 	 */
 	public function ask(string $userId, string $app, string $scenario, array $messages, array $options = []): array {
-		if (!$this->status()['ready']) {
+		if (!$this->status($app)['ready']) {
 			return ['error' => 'not-ready'];
 		}
 		if (($why = $this->refused($userId, $app)) !== '') {
@@ -205,7 +218,7 @@ class HubService {
 	 * @return array{state: string, text?: string, answer?: mixed, tools?: list<string>, error?: string}
 	 */
 	public function askNow(string $userId, string $app, string $scenario, array $messages, array $options = []): array {
-		if (!$this->status()['ready']) {
+		if (!$this->status($app)['ready']) {
 			return ['state' => 'error', 'error' => 'not-ready'];
 		}
 		if (($why = $this->refused($userId, $app)) !== '') {
@@ -226,7 +239,7 @@ class HubService {
 			return ['state' => 'error', 'error' => 'busy'];
 		}
 		try {
-			return $this->converse($userId, $spec, [
+			return $this->converse($userId, $app, $spec, [
 				'messages' => $turns,
 				'context' => is_string($options['context'] ?? null) ? mb_substr($options['context'], 0, 200000) : '',
 				'search' => array_key_exists('search', $options) ? !empty($options['search']) : null,
@@ -280,7 +293,7 @@ class HubService {
 				// this request when it has been disabled since the question was asked.
 				throw new \RuntimeException('no-scenario');
 			}
-			$out += $this->converse($userId, $spec, $payload);
+			$out += $this->converse($userId, $app, $spec, $payload);
 		} catch (\Throwable $e) {
 			$this->logger->error('AI-Hub: a question from ' . $app . ' failed: ' . $e->getMessage(), ['exception' => $e]);
 			$out += ['state' => 'error', 'error' => $e->getMessage()];
@@ -295,13 +308,13 @@ class HubService {
 	 * @param array<string, mixed> $payload
 	 * @return array{state: string, text?: string, answer?: mixed, tools?: list<string>, error?: string}
 	 */
-	private function converse(string $userId, array $spec, array $payload): array {
+	private function converse(string $userId, string $app, array $spec, array $payload): array {
 		$search = $payload['search'] ?? null;
 		$search = $search === null ? $spec['search'] : ($search && $spec['search']);
 		$system = $this->systemPrompt($spec, (string)($payload['context'] ?? ''), (bool)$search);
 		$turns = $payload['messages'];
 		$message = array_pop($turns)['text'];
-		$engine = $this->engines->get();
+		$engine = $this->engines->forApp($app);
 		$used = [];
 		$retriedShape = false;
 		for ($round = 0; $round <= self::MAX_TOOLS + 1; $round += 1) {
@@ -381,7 +394,9 @@ class HubService {
 		$parts[] = $search
 			? 'You may search the web when the question needs something looked up. Say where what you found came from.'
 			: 'You have no access to the internet or to anything outside what is listed here.';
-		if ($spec['language'] !== null && $spec['language'] !== '') {
+		if ($spec['language'] === false) {
+			// the scenario's own prompt says which language
+		} elseif ($spec['language'] !== null && $spec['language'] !== '') {
 			$parts[] = 'Answer in the language with the code ' . $spec['language'] . '.';
 		} else {
 			$parts[] = 'Answer in the language the person writes in.';

@@ -2,7 +2,8 @@
  * SPDX-FileCopyrightText: 2026 KTEC
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * Model picker and connection test for the AI-Hub admin settings.
+ * Model picker, connection test and the list of connecting apps (each with its
+ * own AI and model) for the AI-Hub admin settings.
  */
 (function () {
 	'use strict';
@@ -14,6 +15,12 @@
 	var el = function (id) {
 		return document.getElementById(id);
 	};
+
+	/** Words the template translated for us, by their data-i18n-* name. */
+	function word(name) {
+		var root = el('aihub-tools');
+		return (root && root.getAttribute('data-i18n-' + name)) || name;
+	}
 
 	function url(path) {
 		return OC.generateUrl('/apps/ai_hub' + path);
@@ -51,8 +58,8 @@
 		});
 	}
 
-	function say(message, ok) {
-		var box = el('tb-result');
+	function sayIn(id, message, ok) {
+		var box = el(id);
 		if (!box) {
 			return;
 		}
@@ -61,6 +68,10 @@
 		if (message) {
 			box.classList.add(ok ? 'tb-ok' : 'tb-err');
 		}
+	}
+
+	function say(message, ok) {
+		sayIn('tb-result', message, ok);
 	}
 
 	function renderModels(data) {
@@ -137,6 +148,7 @@
 			if (current) {
 				current.textContent = current.textContent.replace(/—.*$/, '— ' + data.model);
 			}
+			loadApps();
 		}).catch(function (error) {
 			say(error.message, false);
 		}).then(function () {
@@ -163,6 +175,181 @@
 		});
 	}
 
+	// ---- the apps that connect ------------------------------------------------
+
+	function option(value, label, selected) {
+		var o = document.createElement('option');
+		o.value = value;
+		o.textContent = label;
+		o.selected = !!selected;
+		return o;
+	}
+
+	function gets(app) {
+		var g = app.gets || {};
+		var text = g.provider + ' / ' + g.mode + (g.model ? ' — ' + g.model : '');
+		if (app.ready) {
+			return '✓ ' + text;
+		}
+		var why = word('no-' + String(app.reason || '').replace(/^no-/, ''));
+		return '· ' + text + (app.reason ? ' — ' + why : '');
+	}
+
+	function appRow(app) {
+		var tr = document.createElement('tr');
+		tr.setAttribute('data-app', app.id);
+
+		var name = document.createElement('td');
+		name.className = 'tb-app-name';
+		var strong = document.createElement('strong');
+		strong.textContent = app.label;
+		name.appendChild(strong);
+		if (app.scenarios && app.scenarios.length) {
+			var small = document.createElement('small');
+			small.textContent = app.scenarios.join(', ');
+			name.appendChild(document.createElement('br'));
+			name.appendChild(small);
+		}
+		tr.appendChild(name);
+
+		var own = app.own || {};
+		var provider = document.createElement('select');
+		provider.className = 'tb-app-provider';
+		provider.appendChild(option('', word('serverwide'), own.provider === ''));
+		provider.appendChild(option('claude', 'Claude', own.provider === 'claude'));
+		provider.appendChild(option('gemini', 'Gemini', own.provider === 'gemini'));
+		provider.appendChild(option('openai', word('openai'), own.provider === 'openai'));
+		var tdP = document.createElement('td');
+		tdP.appendChild(provider);
+		tr.appendChild(tdP);
+
+		var mode = document.createElement('select');
+		mode.className = 'tb-app-mode';
+		mode.appendChild(option('', word('serverwide'), own.mode === ''));
+		mode.appendChild(option('api', word('api'), own.mode === 'api'));
+		mode.appendChild(option('cli', word('cli'), own.mode === 'cli'));
+		var tdM = document.createElement('td');
+		tdM.appendChild(mode);
+		tr.appendChild(tdM);
+
+		var model = document.createElement('input');
+		model.type = 'text';
+		model.className = 'tb-app-model';
+		model.value = own.model || '';
+		model.placeholder = (app.gets && app.gets.model) || word('serverwide');
+		model.setAttribute('list', 'tb-models-' + app.id);
+		var list = document.createElement('datalist');
+		list.id = 'tb-models-' + app.id;
+		var modelsButton = document.createElement('button');
+		modelsButton.type = 'button';
+		modelsButton.className = 'button tb-app-models';
+		modelsButton.textContent = word('models');
+		var tdModel = document.createElement('td');
+		tdModel.appendChild(model);
+		tdModel.appendChild(list);
+		tdModel.appendChild(modelsButton);
+		tr.appendChild(tdModel);
+
+		var tdGets = document.createElement('td');
+		tdGets.className = 'tb-app-gets';
+		tdGets.textContent = gets(app);
+		tr.appendChild(tdGets);
+
+		var tdAct = document.createElement('td');
+		tdAct.className = 'tb-app-actions';
+		var save = document.createElement('button');
+		save.type = 'button';
+		save.className = 'button primary tb-app-save';
+		save.textContent = word('save');
+		var test = document.createElement('button');
+		test.type = 'button';
+		test.className = 'button tb-app-test';
+		test.textContent = word('test');
+		tdAct.appendChild(save);
+		tdAct.appendChild(test);
+		tr.appendChild(tdAct);
+
+		modelsButton.addEventListener('click', function () {
+			modelsButton.disabled = true;
+			var q = '?app=' + encodeURIComponent(app.id)
+				+ '&provider=' + encodeURIComponent(provider.value)
+				+ '&mode=' + encodeURIComponent(mode.value);
+			request('GET', '/tools/models' + q).then(function (data) {
+				list.innerHTML = '';
+				(data.models || []).forEach(function (m) {
+					list.appendChild(option(m, m, false));
+				});
+				model.placeholder = data.current && data.current.model ? data.current.model : word('serverwide');
+				sayIn('tb-apps-result', data.note || t('Loaded {count} models.').replace('{count}', (data.models || []).length), true);
+			}).catch(function (error) {
+				sayIn('tb-apps-result', error.message, false);
+			}).then(function () {
+				modelsButton.disabled = false;
+			});
+		});
+
+		save.addEventListener('click', function () {
+			save.disabled = true;
+			request('POST', '/tools/app', {
+				app: app.id, provider: provider.value, mode: mode.value, model: model.value.trim()
+			}).then(function (data) {
+				if (data.app) {
+					tdGets.textContent = gets(data.app);
+					model.placeholder = (data.app.gets && data.app.gets.model) || word('serverwide');
+				}
+				sayIn('tb-apps-result', word('saved'), true);
+			}).catch(function (error) {
+				sayIn('tb-apps-result', error.message, false);
+			}).then(function () {
+				save.disabled = false;
+			});
+		});
+
+		test.addEventListener('click', function () {
+			test.disabled = true;
+			sayIn('tb-apps-result', t('Contacting the AI service…'), true);
+			request('POST', '/tools/test', { app: app.id }).then(function (data) {
+				if (data.ok) {
+					sayIn('tb-apps-result', app.label + ': ' + t('{engine} answered using {model}: {reply}')
+						.replace('{engine}', data.engine)
+						.replace('{model}', data.model)
+						.replace('{reply}', data.reply), true);
+				} else {
+					sayIn('tb-apps-result', app.label + ': ' + t('No answer: {detail}').replace('{detail}', data.detail || ''), false);
+				}
+			}).catch(function (error) {
+				sayIn('tb-apps-result', error.message, false);
+			}).then(function () {
+				test.disabled = false;
+			});
+		});
+
+		return tr;
+	}
+
+	function loadApps() {
+		var table = el('tb-apps');
+		var empty = el('tb-apps-empty');
+		if (!table) {
+			return;
+		}
+		request('GET', '/tools/apps').then(function (data) {
+			var body = table.querySelector('tbody');
+			body.innerHTML = '';
+			(data.apps || []).forEach(function (app) {
+				body.appendChild(appRow(app));
+			});
+			var any = (data.apps || []).length > 0;
+			table.classList.toggle('tb-hidden', !any);
+			if (empty) {
+				empty.textContent = any ? '' : word('noapps');
+				empty.classList.toggle('tb-hidden', any);
+			}
+		}).catch(function (error) {
+			sayIn('tb-apps-result', error.message, false);
+		});
+	}
+
 	document.addEventListener('DOMContentLoaded', function () {
 		var fetchButton = el('tb-fetch');
 		var testButton = el('tb-test');
@@ -177,5 +364,6 @@
 		if (saveButton) {
 			saveButton.addEventListener('click', saveModel);
 		}
+		loadApps();
 	});
 })();

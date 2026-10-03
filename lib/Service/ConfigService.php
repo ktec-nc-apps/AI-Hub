@@ -264,6 +264,92 @@ class ConfigService {
 		return array_values(array_unique($apps));
 	}
 
+	// -- per app: which engine and model answer it ---------------------------------
+	// Each app that connects can be given its own AI and model; what is left empty
+	// follows the server-wide choice above. Nextcloud's own Task Processing asks as
+	// the app "taskprocessing".
+
+	/** @return array<string, array{provider: string, mode: string, model: string}> app => what is set (empty = default) */
+	public function getAppEngines(): array {
+		$raw = json_decode($this->getString('app_engines', '{}'), true);
+		$out = [];
+		foreach (is_array($raw) ? $raw : [] as $app => $row) {
+			if (is_string($app) && is_array($row)) {
+				$out[$app] = [
+					'provider' => in_array($row['provider'] ?? '', self::PROVIDERS, true) ? $row['provider'] : '',
+					'mode' => in_array($row['mode'] ?? '', self::MODES, true) ? $row['mode'] : '',
+					'model' => is_string($row['model'] ?? null) ? mb_substr($row['model'], 0, 200) : '',
+				];
+			}
+		}
+		return $out;
+	}
+
+	/** Empty strings mean "the server-wide choice". */
+	public function setAppEngine(string $app, string $provider, string $mode, string $model): void {
+		$all = $this->getAppEngines();
+		$row = [
+			'provider' => in_array($provider, self::PROVIDERS, true) ? $provider : '',
+			'mode' => in_array($mode, self::MODES, true) ? $mode : '',
+			'model' => mb_substr(trim($model), 0, 200),
+		];
+		if ($row === ['provider' => '', 'mode' => '', 'model' => '']) {
+			unset($all[$app]);
+		} else {
+			$all[$app] = $row;
+		}
+		$this->setString('app_engines', json_encode($all, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}');
+	}
+
+	/**
+	 * The engine that answers this app, with every blank filled from the
+	 * server-wide settings: provider, mode (an OpenAI-compatible endpoint is always
+	 * 'api', and 'cli' only while the command line option is enabled) and model.
+	 *
+	 * @return array{provider: string, mode: string, model: string, own: bool} own: whether anything is set for this app itself
+	 */
+	public function getAppEngine(string $app): array {
+		$row = $this->getAppEngines()[$app] ?? ['provider' => '', 'mode' => '', 'model' => ''];
+		$provider = $row['provider'] !== '' ? $row['provider'] : $this->getProvider();
+		$mode = $row['mode'] !== '' ? $row['mode'] : $this->getString('mode', 'api');
+		if ($provider === 'openai' || ($mode === 'cli' && !$this->getBool('cli_enabled')) || !in_array($mode, self::MODES, true)) {
+			$mode = 'api';
+		}
+		$model = $row['model'] !== '' ? $row['model'] : $this->getModel($provider);
+		return ['provider' => $provider, 'mode' => $mode, 'model' => $model, 'own' => $row !== ['provider' => '', 'mode' => '', 'model' => '']];
+	}
+
+	/**
+	 * The apps that have connected (registered a scenario), for the settings page.
+	 *
+	 * @return array<string, array{scenarios: list<string>, seen: int}>
+	 */
+	public function getAppsSeen(): array {
+		$raw = json_decode($this->getString('apps_seen', '{}'), true);
+		$out = [];
+		foreach (is_array($raw) ? $raw : [] as $app => $row) {
+			if (is_string($app) && is_array($row)) {
+				$out[$app] = [
+					'scenarios' => array_values(array_filter((array)($row['scenarios'] ?? []), 'is_string')),
+					'seen' => (int)($row['seen'] ?? 0),
+				];
+			}
+		}
+		return $out;
+	}
+
+	/** Remember that an app connected. Written only when something changed, or at most once an hour. */
+	public function noteAppSeen(string $app, array $scenarios): void {
+		$all = $this->getAppsSeen();
+		$was = $all[$app] ?? null;
+		sort($scenarios);
+		if ($was !== null && $was['scenarios'] === $scenarios && $was['seen'] > time() - 3600) {
+			return;
+		}
+		$all[$app] = ['scenarios' => $scenarios, 'seen' => time()];
+		$this->setString('apps_seen', json_encode($all, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}');
+	}
+
 	public function getRequestTimeout(): int {
 		return max(10, min(600, $this->getInt('request_timeout', 180)));
 	}

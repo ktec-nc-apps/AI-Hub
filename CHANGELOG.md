@@ -17,3 +17,5 @@ First shape, for the App Store registration. Not yet meant for use.
 - Providers for Nextcloud's Task Processing API: text to text, and chat.
 - Administration: engine, keys, model list with a connection test, who and which apps
   may ask, questions per minute and answers in progress at once.
+- Each app that connects is listed and can be given an AI and a model of its own, with a
+  connection test per app; Nextcloud's own Task Processing counts as one app.

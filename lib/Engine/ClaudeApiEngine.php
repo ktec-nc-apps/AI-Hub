@@ -46,7 +46,7 @@ class ClaudeApiEngine extends AbstractHttpEngine {
 		$messages[] = ['role' => 'user', 'content' => $message];
 
 		$body = [
-			'model' => $this->config->getModel('claude'),
+			'model' => $this->model('claude'),
 			'max_tokens' => 4096,
 			'system' => $systemPrompt,
 			'messages' => $messages,

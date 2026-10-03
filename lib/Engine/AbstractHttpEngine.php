@@ -23,11 +23,23 @@ use Psr\Log\LoggerInterface;
  */
 abstract class AbstractHttpEngine implements IEngine {
 
+	/** An app's own choice of model, when it has one. */
+	protected ?string $model = null;
+
 	public function __construct(
 		protected ConfigService $config,
 		protected IClientService $clientService,
 		protected LoggerInterface $logger,
 	) {
+	}
+
+	public function useModel(string $model): void {
+		$this->model = $model !== '' ? $model : null;
+	}
+
+	/** The model to call: the app's own choice, else the one set for the provider. */
+	protected function model(string $provider): string {
+		return $this->model ?? $this->config->getModel($provider);
 	}
 
 	/**

@@ -13,6 +13,9 @@ return [
 		['name' => 'tool#models', 'url' => '/tools/models', 'verb' => 'GET'],
 		['name' => 'tool#test', 'url' => '/tools/test', 'verb' => 'POST'],
 		['name' => 'tool#setModel', 'url' => '/tools/model', 'verb' => 'POST'],
+		// the apps that connect, each with its own choice of AI and model
+		['name' => 'tool#apps', 'url' => '/tools/apps', 'verb' => 'GET'],
+		['name' => 'tool#setApp', 'url' => '/tools/app', 'verb' => 'POST'],
 		// the request a question is handed to, signed with the hub's own secret
 		['name' => 'process#answer', 'url' => '/process', 'verb' => 'POST'],
 	],

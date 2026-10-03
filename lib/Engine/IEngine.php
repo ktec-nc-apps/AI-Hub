@@ -34,4 +34,7 @@ interface IEngine {
 
 	/** List the model ids this engine can currently use. Empty when unavailable. */
 	public function listModels(): array;
+
+	/** Use this model instead of the one set for the provider (an app's own choice). */
+	public function useModel(string $model): void;
 }

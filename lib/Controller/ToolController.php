@@ -12,64 +12,70 @@ namespace OCA\AIHub\Controller;
 use OCA\AIHub\Engine\CliEngine;
 use OCA\AIHub\Engine\EngineFactory;
 use OCA\AIHub\Service\ConfigService;
+use OCA\AIHub\Service\HubService;
+use OCA\AIHub\Service\Redact;
 use OCA\AIHub\Settings\AdminTools;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
 
-/** Backs the model picker and the connection test in the admin settings. */
+/**
+ * Backs the model picker, the connection test and the list of connecting apps
+ * in the admin settings. Everything here can be asked for the server-wide
+ * settings or for one app, which may have its own AI and model.
+ */
 class ToolController extends Controller {
+	/** The name Nextcloud's own Task Processing asks under. */
+	public const TASK_PROCESSING = 'taskprocessing';
 
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private ConfigService $config,
 		private EngineFactory $engineFactory,
+		private HubService $hub,
 		private IL10N $l,
 	) {
 		parent::__construct($appName, $request);
 	}
 
-	/** Which models the current settings can use, plus what each engine looks like. */
+	/**
+	 * Which models an engine can use: the server-wide one, an app's own, or a
+	 * given provider × mode (while the admin is choosing for an app).
+	 */
 	#[AuthorizedAdminSetting(settings: AdminTools::class)]
-	public function models(): JSONResponse {
-		$provider = $this->config->getProvider();
-		$mode = $this->config->getMode();
+	public function models(string $app = '', string $provider = '', string $mode = ''): JSONResponse {
+		[$provider, $mode, $model] = $this->resolve($app, $provider, $mode);
 
 		$models = [];
 		$note = '';
 		try {
-			$models = $this->engineFactory->get()->listModels();
+			$models = $this->engineFactory->build($provider, $mode)->listModels();
 		} catch (\Throwable $e) {
 			$note = $e->getMessage();
 		}
 
 		if ($models === []) {
 			$note = $note !== '' ? $note : $this->l->t('No model list could be retrieved. Check the API key and the base URL.');
-		} elseif ($provider !== 'openai' && $this->config->getApiKey() === '' && $mode === 'api') {
+		} elseif ($provider !== 'openai' && $this->config->getApiKey($provider) === '' && $mode === 'api') {
 			$note = $this->l->t('No API key is set yet, so this is a list of well-known models rather than the ones your key can use.');
 		}
 
 		return new JSONResponse([
-			'current' => [
-				'provider' => $provider,
-				'mode' => $mode,
-				'model' => $this->config->getModel(),
-			],
+			'current' => ['provider' => $provider, 'mode' => $mode, 'model' => $model],
 			'models' => array_values($models),
-			'engines' => $this->probeEngines(),
+			'engines' => $app === '' ? $this->probeEngines() : [],
 			'note' => $note,
 		]);
 	}
 
-	/** Really call the configured engine once. */
+	/** Really call the engine once: the server-wide one, or the one an app gets. */
 	#[AuthorizedAdminSetting(settings: AdminTools::class)]
-	public function test(): JSONResponse {
-		$provider = $this->config->getProvider();
-		$mode = $this->config->getMode();
-		$model = $this->config->getModel();
+	public function test(string $app = ''): JSONResponse {
+		[$provider, $mode, $model] = $this->resolve($app, '', '');
 
 		if ($model === '') {
 			return new JSONResponse([
@@ -79,13 +85,14 @@ class ToolController extends Controller {
 		}
 
 		try {
-			$result = $this->engineFactory->get()->run(
+			$engine = $app === '' ? $this->engineFactory->get() : $this->engineFactory->forApp($app);
+			$result = $engine->run(
 				[],
 				'Reply with the single word: ok',
 				'You are a connection test. Answer with one short word.',
 			);
 		} catch (\Throwable $e) {
-			return new JSONResponse(['ok' => false, 'detail' => \OCA\AIHub\Service\Redact::text($e->getMessage(), \OCA\AIHub\Service\Redact::keysOf($this->config))]);
+			return new JSONResponse(['ok' => false, 'detail' => Redact::text($e->getMessage(), Redact::keysOf($this->config))]);
 		}
 
 		return new JSONResponse([
@@ -93,19 +100,104 @@ class ToolController extends Controller {
 			'engine' => $provider . ' / ' . $mode,
 			'model' => $model,
 			'reply' => mb_substr($result->output, 0, 200),
-			'detail' => mb_substr(\OCA\AIHub\Service\Redact::text($result->detail, \OCA\AIHub\Service\Redact::keysOf($this->config)), 0, 500),
+			'detail' => mb_substr(Redact::text($result->detail, Redact::keysOf($this->config)), 0, 500),
 		]);
 	}
 
-	/** Store the model chosen in the dropdown. */
+	/** Store the model chosen in the dropdown: server-wide, or for one app. */
 	#[AuthorizedAdminSetting(settings: AdminTools::class)]
-	public function setModel(string $model): JSONResponse {
+	public function setModel(string $model, string $app = ''): JSONResponse {
 		$model = trim($model);
 		if ($model === '' || mb_strlen($model) > 200) {
 			return new JSONResponse(['ok' => false, 'detail' => $this->l->t('That is not a valid model name.')]);
 		}
-		$this->config->setModel($model);
+		if ($app !== '') {
+			if (!self::validApp($app)) {
+				return new JSONResponse(['ok' => false, 'detail' => $this->l->t('That is not a valid app id.')], Http::STATUS_BAD_REQUEST);
+			}
+			$row = $this->config->getAppEngines()[$app] ?? ['provider' => '', 'mode' => ''];
+			$this->config->setAppEngine($app, $row['provider'], $row['mode'], $model);
+		} else {
+			$this->config->setModel($model);
+		}
 		return new JSONResponse(['ok' => true, 'model' => $model]);
+	}
+
+	/**
+	 * The apps that connect to the hub, each with what is set for it and what it
+	 * really gets. Nextcloud's own Task Processing is always listed.
+	 */
+	#[AuthorizedAdminSetting(settings: AdminTools::class)]
+	public function apps(): JSONResponse {
+		return new JSONResponse(['apps' => $this->listApps()]);
+	}
+
+	/** Give one app its own AI and model (empty strings = the server-wide choice). */
+	#[AuthorizedAdminSetting(settings: AdminTools::class)]
+	public function setApp(string $app, string $provider = '', string $mode = '', string $model = ''): JSONResponse {
+		if (!self::validApp($app)) {
+			return new JSONResponse(['ok' => false, 'detail' => $this->l->t('That is not a valid app id.')], Http::STATUS_BAD_REQUEST);
+		}
+		if (mb_strlen($model) > 200) {
+			return new JSONResponse(['ok' => false, 'detail' => $this->l->t('That is not a valid model name.')], Http::STATUS_BAD_REQUEST);
+		}
+		$this->config->setAppEngine($app, $provider, $mode, $model);
+		foreach ($this->listApps() as $row) {
+			if ($row['id'] === $app) {
+				return new JSONResponse(['ok' => true, 'app' => $row]);
+			}
+		}
+		return new JSONResponse(['ok' => true]);
+	}
+
+	private static function validApp(string $app): bool {
+		return (bool)preg_match('/^[a-z][a-z0-9_]{1,63}$/', $app);
+	}
+
+	/**
+	 * @return array{0: string, 1: string, 2: string} provider, mode, model
+	 */
+	private function resolve(string $app, string $provider, string $mode): array {
+		if ($app !== '' && self::validApp($app)) {
+			$e = $this->config->getAppEngine($app);
+			$base = [$e['provider'], $e['mode'], $e['model']];
+		} else {
+			$base = [$this->config->getProvider(), $this->config->getMode(), $this->config->getModel()];
+		}
+		if (in_array($provider, ConfigService::PROVIDERS, true)) {
+			$base[0] = $provider;
+			$base[2] = $this->config->getModel($provider);
+		}
+		if (in_array($mode, ConfigService::MODES, true)) {
+			$base[1] = $mode;
+		}
+		if ($base[0] === 'openai' || ($base[1] === 'cli' && !$this->config->isCliEnabled())) {
+			$base[1] = 'api';
+		}
+		return $base;
+	}
+
+	/** @return list<array<string, mixed>> */
+	private function listApps(): array {
+		$seen = $this->config->getAppsSeen();
+		$own = $this->config->getAppEngines();
+		$ids = array_unique(array_merge([self::TASK_PROCESSING], array_keys($seen), array_keys($own)));
+		sort($ids);
+		$out = [];
+		foreach ($ids as $id) {
+			$status = $this->hub->status($id);
+			$out[] = [
+				'id' => $id,
+				'label' => $id === self::TASK_PROCESSING ? $this->l->t('Nextcloud Task Processing (Assistant and the standard API)') : $id,
+				'scenarios' => $seen[$id]['scenarios'] ?? [],
+				'seen' => $seen[$id]['seen'] ?? 0,
+				'own' => $own[$id] ?? ['provider' => '', 'mode' => '', 'model' => ''],
+				'gets' => ['provider' => $status['provider'], 'mode' => $status['mode'], 'model' => $status['model']],
+				'ready' => $status['ready'],
+				'reason' => $status['reason'],
+			];
+		}
+		return $out;
 	}
 
 	/**

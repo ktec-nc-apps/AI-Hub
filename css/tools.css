@@ -81,3 +81,61 @@
 #aihub-tools #tb-engines .tb-not-ready {
 	color: var(--color-text-maxcontrast);
 }
+
+/* the apps that connect, each with its own AI and model */
+#aihub-tools #tb-apps {
+	border-collapse: collapse;
+	margin: 8px 0 16px;
+	max-width: 100%;
+}
+
+#aihub-tools #tb-apps th,
+#aihub-tools #tb-apps td {
+	padding: 6px 8px;
+	text-align: start;
+	vertical-align: top;
+	border-bottom: 1px solid var(--color-border, #ddd);
+}
+
+#aihub-tools #tb-apps th {
+	font-weight: bold;
+	color: var(--color-text-maxcontrast);
+}
+
+#aihub-tools .tb-app-name small {
+	color: var(--color-text-maxcontrast);
+}
+
+#aihub-tools .tb-app-model {
+	min-width: 180px;
+}
+
+#aihub-tools .tb-app-actions .button,
+#aihub-tools .tb-app-models {
+	margin: 2px 4px 2px 0;
+}
+
+#aihub-tools .tb-app-gets {
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	max-width: 260px;
+}
+
+#aihub-tools #tb-apps-result:not(:empty) {
+	margin: 8px 0;
+	padding: 8px 12px;
+	border-radius: var(--border-radius-large, 8px);
+	border-inline-start: 4px solid var(--color-border, #ddd);
+	background-color: var(--color-background-hover);
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	max-width: 700px;
+}
+
+#aihub-tools #tb-apps-result.tb-ok {
+	border-inline-start-color: var(--color-success, #46ba61);
+}
+
+#aihub-tools #tb-apps-result.tb-err {
+	border-inline-start-color: var(--color-error, #e9322d);
+}
