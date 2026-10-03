@@ -55,6 +55,8 @@ Anthropic Claude と Google Gemini（それぞれの API）。OpenAI 互換の�
 	<website>https://github.com/ktec-nc-apps/AI-Hub</website>
 	<bugs>https://github.com/ktec-nc-apps/AI-Hub/issues</bugs>
 	<repository>https://github.com/ktec-nc-apps/AI-Hub</repository>
+	<screenshot>https://raw.githubusercontent.com/ktec-nc-apps/AI-Hub/main/screenshots/01-engine.png</screenshot>
+	<screenshot>https://raw.githubusercontent.com/ktec-nc-apps/AI-Hub/main/screenshots/02-apps.png</screenshot>
 	<dependencies>
 		<php min-version="8.1"/>
 		<nextcloud min-version="30" max-version="35"/>
