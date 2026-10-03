@@ -1,0 +1,7 @@
+/appinfo/signature.json
+/build/
+/node_modules/
+/vendor/
+/.phpunit.result.cache
+*.tar.gz
+*.sig
