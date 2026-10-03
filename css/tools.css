@@ -86,7 +86,35 @@
 #aihub-tools #tb-apps {
 	border-collapse: collapse;
 	margin: 8px 0 16px;
+	width: 100%;
 	max-width: 100%;
+	table-layout: fixed;
+}
+
+#aihub-tools #tb-apps th:nth-child(1) { width: 19%; }
+#aihub-tools #tb-apps th:nth-child(2) { width: 14%; }
+#aihub-tools #tb-apps th:nth-child(3) { width: 17%; }
+#aihub-tools #tb-apps th:nth-child(4) { width: 22%; }
+#aihub-tools #tb-apps th:nth-child(5) { width: 18%; }
+#aihub-tools #tb-apps th:nth-child(6) { width: 10%; }
+
+#aihub-tools #tb-apps select,
+#aihub-tools #tb-apps input[type="text"] {
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
+	margin: 0;
+}
+
+#aihub-tools #tb-apps .button {
+	display: block;
+	width: 100%;
+	margin: 4px 0 0;
+	padding-inline: 6px;
+}
+
+#aihub-tools .tb-app-name {
+	overflow-wrap: anywhere;
 }
 
 #aihub-tools #tb-apps th,
@@ -106,19 +134,10 @@
 	color: var(--color-text-maxcontrast);
 }
 
-#aihub-tools .tb-app-model {
-	min-width: 180px;
-}
-
-#aihub-tools .tb-app-actions .button,
-#aihub-tools .tb-app-models {
-	margin: 2px 4px 2px 0;
-}
-
 #aihub-tools .tb-app-gets {
-	white-space: pre-wrap;
+	white-space: normal;
 	overflow-wrap: anywhere;
-	max-width: 260px;
+	font-size: 0.95em;
 }
 
 #aihub-tools #tb-apps-result:not(:empty) {
