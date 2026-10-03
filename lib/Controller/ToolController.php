@@ -18,6 +18,7 @@ use OCA\AIHub\Settings\AdminTools;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
+use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
@@ -30,6 +31,8 @@ use OCP\IRequest;
 class ToolController extends Controller {
 	/** The name Nextcloud's own Task Processing asks under. */
 	public const TASK_PROCESSING = 'taskprocessing';
+	/** The Base series is listed from the start, greyed out until it is installed (the owner, 2026-10-03). */
+	public const BASE_APPS = ['editbase' => 'EditBase', 'regibase' => 'RegiBase', 'formulabase' => 'FormulaBase', 'netbase' => 'NetBase'];
 
 	public function __construct(
 		string $appName,
@@ -37,6 +40,7 @@ class ToolController extends Controller {
 		private ConfigService $config,
 		private EngineFactory $engineFactory,
 		private HubService $hub,
+		private IAppManager $appManager,
 		private IL10N $l,
 	) {
 		parent::__construct($appName, $request);
@@ -181,14 +185,19 @@ class ToolController extends Controller {
 	private function listApps(): array {
 		$seen = $this->config->getAppsSeen();
 		$own = $this->config->getAppEngines();
-		$ids = array_unique(array_merge([self::TASK_PROCESSING], array_keys($seen), array_keys($own)));
-		sort($ids);
+		// The Base series first, then Nextcloud's own Task Processing, then whatever else has connected.
+		$ids = array_keys(self::BASE_APPS);
+		$ids[] = self::TASK_PROCESSING;
+		$rest = array_values(array_diff(array_unique(array_merge(array_keys($seen), array_keys($own))), $ids));
+		sort($rest);
 		$out = [];
-		foreach ($ids as $id) {
+		foreach (array_merge($ids, $rest) as $id) {
 			$status = $this->hub->status($id);
 			$out[] = [
 				'id' => $id,
-				'label' => $id === self::TASK_PROCESSING ? $this->l->t('Nextcloud Task Processing (Assistant and the standard API)') : $id,
+				'label' => $this->labelOf($id),
+				'installed' => $id === self::TASK_PROCESSING || $this->appManager->isEnabledForUser($id),
+				'connected' => $id === self::TASK_PROCESSING || isset($seen[$id]),
 				'scenarios' => $seen[$id]['scenarios'] ?? [],
 				'seen' => $seen[$id]['seen'] ?? 0,
 				'own' => $own[$id] ?? ['provider' => '', 'mode' => '', 'model' => ''],
@@ -198,6 +207,22 @@ class ToolController extends Controller {
 			];
 		}
 		return $out;
+	}
+
+	/** The name shown for an app: the Base series by name, others by what their info.xml says. */
+	private function labelOf(string $id): string {
+		if ($id === self::TASK_PROCESSING) {
+			return $this->l->t('Nextcloud Task Processing (Assistant and the standard API)');
+		}
+		if (isset(self::BASE_APPS[$id])) {
+			return self::BASE_APPS[$id];
+		}
+		try {
+			$name = $this->appManager->getAppInfo($id)['name'] ?? '';
+			return is_string($name) && $name !== '' ? $name : $id;
+		} catch (\Throwable) {
+			return $id;
+		}
 	}
 
 	/**

@@ -160,3 +160,11 @@
 #aihub-tools #tb-apps-result.tb-err {
 	border-inline-start-color: var(--color-error, #e9322d);
 }
+
+#aihub-tools #tb-apps tr.tb-off td {
+	opacity: 0.5;
+}
+
+#aihub-tools #tb-apps tr.tb-off .tb-app-gets {
+	font-style: italic;
+}

@@ -19,6 +19,8 @@
 	data-i18n-saved="<?php p($l->t('Saved.')); ?>"
 	data-i18n-ready="<?php p($l->t('ready')); ?>"
 	data-i18n-noapps="<?php p($l->t('No app has connected yet.')); ?>"
+	data-i18n-notinstalled="<?php p($l->t('Not installed')); ?>"
+	data-i18n-notconnected="<?php p($l->t('Has not connected yet')); ?>"
 	data-i18n-no-key="<?php p($l->t('No API key.')); ?>"
 	data-i18n-no-cli="<?php p($l->t('No path configured.')); ?>"
 	data-i18n-no-model="<?php p($l->t('Pick a model first.')); ?>"
@@ -52,7 +54,7 @@
 
 	<h3><?php p($l->t('Apps that connect')); ?></h3>
 	<p class="settings-hint">
-		<?php p($l->t('Each app that asks AI-Hub can have its own AI and model. What is left as "Server-wide" follows the choice above. Nextcloud\'s own Task Processing (the Assistant and every app written against the standard API) is listed as one app.')); ?>
+		<?php p($l->t('Each app that asks AI-Hub can have its own AI and model. What is left as "Server-wide" follows the choice above. Nextcloud\'s own Task Processing (the Assistant and every app written against the standard API) is listed as one app. The Base series is listed from the start and greyed out until it is installed.')); ?>
 	</p>
 	<div id="tb-apps-result" role="status" aria-live="polite"></div>
 	<table id="tb-apps" class="tb-hidden">

@@ -204,9 +204,11 @@
 		var strong = document.createElement('strong');
 		strong.textContent = app.label;
 		name.appendChild(strong);
-		if (app.scenarios && app.scenarios.length) {
+		var sub = app.scenarios && app.scenarios.length ? app.scenarios.join(', ')
+			: (app.installed && !app.connected ? word('notconnected') : '');
+		if (sub) {
 			var small = document.createElement('small');
-			small.textContent = app.scenarios.join(', ');
+			small.textContent = sub;
 			name.appendChild(document.createElement('br'));
 			name.appendChild(small);
 		}
@@ -252,7 +254,7 @@
 
 		var tdGets = document.createElement('td');
 		tdGets.className = 'tb-app-gets';
-		tdGets.textContent = gets(app);
+		tdGets.textContent = app.installed ? gets(app) : word('notinstalled');
 		tr.appendChild(tdGets);
 
 		var tdAct = document.createElement('td');
@@ -268,6 +270,13 @@
 		tdAct.appendChild(save);
 		tdAct.appendChild(test);
 		tr.appendChild(tdAct);
+
+		// An app that is not installed is shown greyed out, with nothing to set.
+		if (!app.installed) {
+			tr.classList.add('tb-off');
+			[provider, mode, model, modelsButton, save, test].forEach(function (c) { c.disabled = true; });
+			return tr;
+		}
 
 		modelsButton.addEventListener('click', function () {
 			modelsButton.disabled = true;
