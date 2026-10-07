@@ -132,18 +132,10 @@ class AdminFormAccess implements IDeclarativeSettingsFormWithHandlers {
 				],
 				[
 					'id' => 'cli_user_tools',
-					'title' => $this->l->t('Tools for ordinary users'),
-					'description' => $this->l->t('Empty means no tools at all: the model can only answer. Otherwise a comma-separated list, for example WebSearch. Applies to everyone who is not a Nextcloud administrator. A scenario that asks for web search gets WebSearch regardless.'),
+					'title' => $this->l->t('Tools for the command line tool'),
+					'description' => $this->l->t('Empty means no tools at all: the model can only answer. Otherwise a comma-separated list, for example WebSearch. It applies to Nextcloud\'s own Task Processing (the Assistant) and to the connection test. A scenario registered by an app gets web search or nothing, whatever is set here.'),
 					'type' => DeclarativeSettingsTypes::TEXT,
 					'placeholder' => $this->l->t('empty = no tools (recommended)'),
-					'default' => '',
-				],
-				[
-					'id' => 'cli_admin_tools',
-					'title' => $this->l->t('Tools for Nextcloud administrators'),
-					'description' => $this->l->t('⚠ Leave empty unless you mean it. Anything you put here — "default" for all tools, or a list such as Bash,Read,Edit — lets every member of the admin group run it on this server through an app that asks as an administrator, with the rights of the web server user. Empty means administrators get the same as everyone else.'),
-					'type' => DeclarativeSettingsTypes::TEXT,
-					'placeholder' => $this->l->t('empty = administrators get no tools either'),
 					'default' => '',
 				],
 				[

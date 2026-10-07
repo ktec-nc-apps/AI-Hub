@@ -40,14 +40,16 @@ class ClaudeApiEngine extends AbstractHttpEngine {
 		foreach ($history as $turn) {
 			$messages[] = [
 				'role' => $turn['role'] === 'assistant' ? 'assistant' : 'user',
-				'content' => $turn['text'],
+				'content' => self::content($turn['text'], $turn['images'] ?? []),
 			];
 		}
-		$messages[] = ['role' => 'user', 'content' => $message];
+		$messages[] = ['role' => 'user', 'content' => self::content($message, $options['images'] ?? [])];
 
 		$body = [
 			'model' => $this->model('claude'),
-			'max_tokens' => 4096,
+			// Room for a long answer (a document, a shaped JSON reply): at 4096 the
+			// answer was cut off and a shaped one then failed its schema.
+			'max_tokens' => 16384,
 			'system' => $systemPrompt,
 			'messages' => $messages,
 		];
@@ -72,7 +74,31 @@ class ClaudeApiEngine extends AbstractHttpEngine {
 			}
 		}
 		$text = trim($text);
+		if (($result['body']['stop_reason'] ?? '') === 'max_tokens') {
+			$this->logger->warning('AI-Hub: the Claude answer was cut off at the output limit', ['model' => $this->model('claude')]);
+		}
 		return $text === '' ? TurnResult::error('The model returned an empty response.') : TurnResult::ok($text);
+	}
+
+	/**
+	 * A turn's content: the text alone, or with images the image blocks first and then
+	 * the text (left out when there is none -- an image may be sent on its own).
+	 *
+	 * @param list<array{type: string, data: string}> $images
+	 * @return string|list<array<string, mixed>>
+	 */
+	private static function content(string $text, array $images): string|array {
+		if ($images === []) {
+			return $text;
+		}
+		$blocks = [];
+		foreach ($images as $image) {
+			$blocks[] = ['type' => 'image', 'source' => ['type' => 'base64', 'media_type' => $image['type'], 'data' => $image['data']]];
+		}
+		if (trim($text) !== '') {
+			$blocks[] = ['type' => 'text', 'text' => $text];
+		}
+		return $blocks;
 	}
 
 	public function listModels(): array {

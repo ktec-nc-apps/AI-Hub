@@ -36,10 +36,10 @@ class GeminiApiEngine extends AbstractHttpEngine {
 		foreach ($history as $turn) {
 			$contents[] = [
 				'role' => $turn['role'] === 'assistant' ? 'model' : 'user',
-				'parts' => [['text' => $turn['text']]],
+				'parts' => self::parts($turn['text'], $turn['images'] ?? []),
 			];
 		}
-		$contents[] = ['role' => 'user', 'parts' => [['text' => $message]]];
+		$contents[] = ['role' => 'user', 'parts' => self::parts($message, $options['images'] ?? [])];
 
 		// The key goes in a header, never in the address: an error from the HTTP
 		// client repeats the address, and it was posted to the room (review T1).
@@ -68,6 +68,24 @@ class GeminiApiEngine extends AbstractHttpEngine {
 		}
 		$text = trim($text);
 		return $text === '' ? TurnResult::error('The model returned an empty response.') : TurnResult::ok($text);
+	}
+
+	/**
+	 * A turn's parts: the images as inline data first, then the text (left out when
+	 * there is none and an image stands on its own).
+	 *
+	 * @param list<array{type: string, data: string}> $images
+	 * @return list<array<string, mixed>>
+	 */
+	private static function parts(string $text, array $images): array {
+		$parts = [];
+		foreach ($images as $image) {
+			$parts[] = ['inline_data' => ['mime_type' => $image['type'], 'data' => $image['data']]];
+		}
+		if ($images === [] || trim($text) !== '') {
+			$parts[] = ['text' => $text];
+		}
+		return $parts;
 	}
 
 	public function listModels(): array {

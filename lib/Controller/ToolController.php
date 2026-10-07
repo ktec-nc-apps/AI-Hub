@@ -9,10 +9,12 @@ declare(strict_types=1);
 
 namespace OCA\AIHub\Controller;
 
+use OCA\AIHub\AppInfo\Application;
 use OCA\AIHub\Engine\CliEngine;
 use OCA\AIHub\Engine\EngineFactory;
 use OCA\AIHub\Service\ConfigService;
 use OCA\AIHub\Service\HubService;
+use OCA\AIHub\Service\MarkerService;
 use OCA\AIHub\Service\Redact;
 use OCA\AIHub\Settings\AdminTools;
 use OCP\AppFramework\Controller;
@@ -32,7 +34,7 @@ class ToolController extends Controller {
 	/** The name Nextcloud's own Task Processing asks under. */
 	public const TASK_PROCESSING = 'taskprocessing';
 	/** The Base series and Talk-Bot are listed from the start, greyed out until installed (the owner, 2026-10-03). */
-	public const BASE_APPS = ['editbase' => 'EditBase', 'regibase' => 'RegiBase', 'formulabase' => 'FormulaBase', 'netbase' => 'NetBase', 'ktec_talkbot' => 'Talk-Bot'];
+	public const BASE_APPS = ['editbase' => 'EditBase', 'calcbase' => 'CalcBase', 'regibase' => 'RegiBase', 'formulabase' => 'FormulaBase', 'netbase' => 'NetBase', 'ktec_talkbot' => 'Talk-Bot'];
 
 	public function __construct(
 		string $appName,
@@ -40,6 +42,7 @@ class ToolController extends Controller {
 		private ConfigService $config,
 		private EngineFactory $engineFactory,
 		private HubService $hub,
+		private MarkerService $markers,
 		private IAppManager $appManager,
 		private IL10N $l,
 	) {
@@ -136,22 +139,93 @@ class ToolController extends Controller {
 		return new JSONResponse(['apps' => $this->listApps()]);
 	}
 
+	/**
+	 * The apps that declare AI-Hub support (they ship appinfo/ai-hub.json) and are
+	 * not in the list yet -- enabled or not -- so the administrator can pick one
+	 * instead of typing its id.
+	 */
+	#[AuthorizedAdminSetting(settings: AdminTools::class)]
+	public function compatible(): JSONResponse {
+		$listed = $this->listedIds();
+		$out = [];
+		foreach ($this->markers->compatibleApps() as $id => $app) {
+			if (in_array($id, $listed, true)) {
+				continue;
+			}
+			$out[] = [
+				'id' => $id,
+				'name' => $app['name'],
+				'enabled' => $app['enabled'],
+				'scenarios' => $app['scenarios'],
+			];
+		}
+		return new JSONResponse(['apps' => $out]);
+	}
+
 	/** Give one app its own AI and model (empty strings = the server-wide choice). */
 	#[AuthorizedAdminSetting(settings: AdminTools::class)]
-	public function setApp(string $app, string $provider = '', string $mode = '', string $model = ''): JSONResponse {
+	public function setApp(string $app, string $provider = '', string $mode = '', string $model = '', ?string $prompt = null): JSONResponse {
 		if (!self::validApp($app)) {
 			return new JSONResponse(['ok' => false, 'detail' => $this->l->t('That is not a valid app id.')], Http::STATUS_BAD_REQUEST);
 		}
 		if (mb_strlen($model) > 200) {
 			return new JSONResponse(['ok' => false, 'detail' => $this->l->t('That is not a valid model name.')], Http::STATUS_BAD_REQUEST);
 		}
+		if ($prompt !== null && mb_strlen($prompt) > ConfigService::APP_PROMPT_MAX) {
+			return new JSONResponse(['ok' => false, 'detail' => $this->l->t('The additional prompt is longer than %s characters.', [(string)ConfigService::APP_PROMPT_MAX])], Http::STATUS_BAD_REQUEST);
+		}
 		$this->config->setAppEngine($app, $provider, $mode, $model);
+		if ($prompt !== null) {
+			$this->config->setAppPrompt($app, $prompt);
+		}
 		foreach ($this->listApps() as $row) {
 			if ($row['id'] === $app) {
 				return new JSONResponse(['ok' => true, 'app' => $row]);
 			}
 		}
 		return new JSONResponse(['ok' => true]);
+	}
+
+	/**
+	 * Add an app to the list by its id, so it can be configured before it has ever
+	 * connected. Adding an id that is already listed is a no-op (no duplicate row).
+	 */
+	#[AuthorizedAdminSetting(settings: AdminTools::class)]
+	public function addApp(string $app): JSONResponse {
+		$app = strtolower(trim($app));
+		if (!self::validApp($app)) {
+			return new JSONResponse(['ok' => false, 'detail' => $this->l->t('That is not a valid app id.')], Http::STATUS_BAD_REQUEST);
+		}
+		if ($app === Application::APP_ID) {
+			return new JSONResponse(['ok' => false, 'detail' => $this->l->t('AI-Hub is not a client of itself.')], Http::STATUS_BAD_REQUEST);
+		}
+		$this->config->addManagedApp($app);
+		foreach ($this->listApps() as $row) {
+			if ($row['id'] === $app) {
+				return new JSONResponse(['ok' => true, 'app' => $row]);
+			}
+		}
+		return new JSONResponse(['ok' => true]);
+	}
+
+	/**
+	 * Remove an app entry: drop it from the managed list, from its per-app engine
+	 * override and from the record that it connected. The fixed rows (the Base
+	 * series and Task Processing) are always listed and cannot be removed. An app
+	 * that is still installed and enabled may reappear the next time it registers a
+	 * scenario -- the caller is told so it can say as much.
+	 */
+	#[AuthorizedAdminSetting(settings: AdminTools::class)]
+	public function deleteApp(string $app): JSONResponse {
+		if (!self::validApp($app)) {
+			return new JSONResponse(['ok' => false, 'detail' => $this->l->t('That is not a valid app id.')], Http::STATUS_BAD_REQUEST);
+		}
+		if (isset(self::BASE_APPS[$app]) || $app === self::TASK_PROCESSING) {
+			return new JSONResponse(['ok' => false, 'detail' => $this->l->t('That app cannot be removed from the list.')], Http::STATUS_BAD_REQUEST);
+		}
+		$mayReappear = isset($this->config->getAppsSeen()[$app]) && $this->appManager->isEnabledForUser($app);
+		$this->config->forgetApp($app);
+		return new JSONResponse(['ok' => true, 'mayReappear' => $mayReappear]);
 	}
 
 	private static function validApp(string $app): bool {
@@ -181,18 +255,37 @@ class ToolController extends Controller {
 		return $base;
 	}
 
+	/**
+	 * The ids of every row in the list, in display order: the Base series and
+	 * Talk-Bot first, then Nextcloud's own Task Processing, then whatever else has
+	 * connected, been given an engine, or been added by hand.
+	 *
+	 * @return list<string>
+	 */
+	private function listedIds(): array {
+		$seen = $this->config->getAppsSeen();
+		$own = $this->config->getAppEngines();
+		$managed = $this->config->getManagedApps();
+		$ids = array_keys(self::BASE_APPS);
+		$ids[] = self::TASK_PROCESSING;
+		$rest = array_values(array_diff(array_unique(array_merge(array_keys($seen), array_keys($own), $managed)), $ids));
+		// AI-Hub is never a client of itself; this also hides any stale self-row from testing.
+		$rest = array_values(array_filter($rest, static fn (string $id): bool => $id !== Application::APP_ID));
+		sort($rest);
+		return array_merge($ids, $rest);
+	}
+
 	/** @return list<array<string, mixed>> */
 	private function listApps(): array {
 		$seen = $this->config->getAppsSeen();
 		$own = $this->config->getAppEngines();
-		// The Base series and Talk-Bot first, then Nextcloud's own Task Processing, then whatever else has connected.
-		$ids = array_keys(self::BASE_APPS);
-		$ids[] = self::TASK_PROCESSING;
-		$rest = array_values(array_diff(array_unique(array_merge(array_keys($seen), array_keys($own))), $ids));
-		sort($rest);
+		$prompts = $this->config->getAppPrompts();
 		$out = [];
-		foreach (array_merge($ids, $rest) as $id) {
+		foreach ($this->listedIds() as $id) {
 			$status = $this->hub->status($id);
+			// The fixed rows are always listed and have no trash; only admin-added and
+			// auto-discovered rows can be removed.
+			$fixed = isset(self::BASE_APPS[$id]) || $id === self::TASK_PROCESSING;
 			$out[] = [
 				'id' => $id,
 				'label' => $this->labelOf($id),
@@ -201,9 +294,11 @@ class ToolController extends Controller {
 				'scenarios' => $seen[$id]['scenarios'] ?? [],
 				'seen' => $seen[$id]['seen'] ?? 0,
 				'own' => $own[$id] ?? ['provider' => '', 'mode' => '', 'model' => ''],
+				'prompt' => $prompts[$id] ?? '',
 				'gets' => ['provider' => $status['provider'], 'mode' => $status['mode'], 'model' => $status['model']],
 				'ready' => $status['ready'],
 				'reason' => $status['reason'],
+				'fixed' => $fixed,
 			];
 		}
 		return $out;

@@ -82,6 +82,38 @@
 	color: var(--color-text-maxcontrast);
 }
 
+/* add an app to the list by its id */
+#aihub-tools .tb-add-app {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	margin: 8px 0;
+}
+
+#aihub-tools .tb-add-app label {
+	font-weight: bold;
+	color: var(--color-text-maxcontrast);
+}
+
+#aihub-tools #tb-add-app-id {
+	min-width: 220px;
+	max-width: 100%;
+	height: 36px;
+}
+
+/* the apps that declare AI-Hub support and are not listed yet; greyed out when
+   there is none to pick, and the typed id stays as the way in */
+#aihub-tools #tb-add-app-select {
+	min-width: 260px;
+	max-width: 100%;
+	height: 36px;
+}
+
+#aihub-tools .tb-add-app-or {
+	font-weight: normal;
+}
+
 /* the apps that connect, each with its own AI and model */
 #aihub-tools #tb-apps {
 	border-collapse: collapse;
@@ -91,17 +123,19 @@
 	table-layout: fixed;
 }
 
-#aihub-tools #tb-apps th:nth-child(1) { width: 19%; }
-#aihub-tools #tb-apps th:nth-child(2) { width: 18%; }
-#aihub-tools #tb-apps th:nth-child(3) { width: 17%; }
-#aihub-tools #tb-apps th:nth-child(4) { width: 20%; }
+/* the model column is the widest: model ids are long, and its select lists them all */
+#aihub-tools #tb-apps th:nth-child(1) { width: 18%; }
+#aihub-tools #tb-apps th:nth-child(2) { width: 15%; }
+#aihub-tools #tb-apps th:nth-child(3) { width: 15%; }
+#aihub-tools #tb-apps th:nth-child(4) { width: 26%; }
 #aihub-tools #tb-apps th:nth-child(5) { width: 16%; }
 #aihub-tools #tb-apps th:nth-child(6) { width: 10%; }
 
-#aihub-tools #tb-apps select,
-#aihub-tools #tb-apps input[type="text"] {
+#aihub-tools #tb-apps select {
 	width: 100%;
 	max-width: 100%;
+	min-width: 0;
+	height: 36px;
 	box-sizing: border-box;
 	margin: 0;
 }
@@ -167,4 +201,52 @@
 
 #aihub-tools #tb-apps tr.tb-off .tb-app-gets {
 	font-style: italic;
+}
+
+/* a greyed-out (not installed) row that can still be removed keeps its actions
+   cell at full opacity, so the trash stays clearly usable; the disabled
+   Save/Test inside it fade on their own */
+#aihub-tools #tb-apps tr.tb-off td.tb-app-actions:has(.tb-app-remove) {
+	opacity: 1;
+}
+
+#aihub-tools .tb-app-remove {
+	color: var(--color-error, #e9322d);
+}
+
+/* the administrator's additional prompt for one app: a folded row under the app */
+#aihub-tools #tb-apps tr.tb-app-prompt-row td {
+	padding-top: 0;
+	border-top: none;
+}
+#aihub-tools .tb-app-prompt summary {
+	cursor: pointer;
+	color: var(--color-text-maxcontrast);
+	padding: 2px 0 6px;
+}
+#aihub-tools .tb-app-prompt[open] summary {
+	color: var(--color-main-text);
+}
+#aihub-tools .tb-app-prompt-text {
+	display: block;
+	width: 100%;
+	max-width: 900px;
+	min-height: 6em;
+	font-family: inherit;
+	resize: vertical;
+}
+#aihub-tools .tb-app-prompt-count {
+	display: block;
+	color: var(--color-text-maxcontrast);
+	margin: 2px 0;
+}
+#aihub-tools #tb-apps tr.tb-app-prompt-row.tb-off {
+	opacity: .55;
+}
+/* the line under an app goes under its prompt row instead */
+#aihub-tools #tb-apps tr[data-app] td {
+	border-bottom: none;
+}
+#aihub-tools #tb-apps tr.tb-app-prompt-row td {
+	border-bottom: 1px solid var(--color-border, #ddd);
 }

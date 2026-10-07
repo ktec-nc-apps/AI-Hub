@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OCA\AIHub\TaskProcessing;
 
 use OCA\AIHub\AppInfo\Application;
+use OCA\AIHub\Service\HubService;
 use OCP\TaskProcessing\TaskTypes\TextToTextChat;
 
 /** Nextcloud's "chat" task: a system prompt, a history and the new message. */
@@ -34,6 +35,10 @@ class TextToTextChatProvider extends TextToTextProvider {
 		$system = is_string($input['system_prompt'] ?? null) && trim($input['system_prompt']) !== ''
 			? $input['system_prompt']
 			: 'You are a helpful assistant inside Nextcloud. Answer in the language the person writes in.';
+		$admin = $this->config->getAppPrompt('taskprocessing');
+		if ($admin !== '') {
+			$system .= "\n\n" . HubService::adminPromptBlock($admin);
+		}
 		// The history is a list of texts, the person's and the assistant's in turn,
 		// the person's first.
 		$history = [];

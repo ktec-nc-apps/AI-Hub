@@ -21,14 +21,19 @@ interface IEngine {
 	public function getName(): string;
 
 	/**
-	 * @param list<array{role: string, text: string}> $history Oldest first, excluding $message.
+	 * @param list<array{role: string, text: string, images?: list<array{type: string, data: string}>}> $history Oldest first,
+	 *                       excluding $message. A turn may carry images (base64, checked by the hub) -- only within
+	 *                       one question, when a tool round puts the question with its images into the history.
 	 * @param bool $elevated Whether the person asking is a Nextcloud administrator
 	 *                       and the admin tier is switched on. Only the command
 	 *                       line engine can act on it; the HTTP engines have no
 	 *                       tools to give either way.
-	 * @param array{search?: bool} $options For another app asking through AssistantService:
-	 *                       'search' lets the model search the web, on the provider's side
-	 *                       where it has such a tool (Claude, Gemini), and nothing else.
+	 * @param array{search?: bool, images?: list<array{type: string, data: string}>} $options For another app asking through
+	 *                       AssistantService: 'search' lets the model search the web, on the provider's side where it
+	 *                       has such a tool (Claude, Gemini), and nothing else. Every engine answers from $history:
+	 *                       none keeps a conversation of its own. 'images' are the images sent with $message
+	 *                       (list of ['type' => 'image/png'|'image/jpeg'|'image/gif'|'image/webp', 'data' => base64]),
+	 *                       already checked by the hub; an engine that cannot pass images on refuses the turn.
 	 */
 	public function run(array $history, string $message, string $systemPrompt, bool $elevated = false, array $options = []): TurnResult;
 

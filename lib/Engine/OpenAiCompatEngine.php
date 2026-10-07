@@ -26,10 +26,10 @@ class OpenAiCompatEngine extends AbstractHttpEngine {
 		foreach ($history as $turn) {
 			$messages[] = [
 				'role' => $turn['role'] === 'assistant' ? 'assistant' : 'user',
-				'content' => $turn['text'],
+				'content' => self::content($turn['text'], $turn['images'] ?? []),
 			];
 		}
-		$messages[] = ['role' => 'user', 'content' => $message];
+		$messages[] = ['role' => 'user', 'content' => self::content($message, $options['images'] ?? [])];
 
 		$model = $this->model('openai');
 		if ($model === '') {
@@ -52,6 +52,27 @@ class OpenAiCompatEngine extends AbstractHttpEngine {
 
 		$text = trim((string)($result['body']['choices'][0]['message']['content'] ?? ''));
 		return $text === '' ? TurnResult::error('The model returned an empty response.') : TurnResult::ok($text);
+	}
+
+	/**
+	 * A turn's content: the text alone, or with images the text part (when there is
+	 * text) and each image as a data: address, the form vision models take.
+	 *
+	 * @param list<array{type: string, data: string}> $images
+	 * @return string|list<array<string, mixed>>
+	 */
+	private static function content(string $text, array $images): string|array {
+		if ($images === []) {
+			return $text;
+		}
+		$parts = [];
+		if (trim($text) !== '') {
+			$parts[] = ['type' => 'text', 'text' => $text];
+		}
+		foreach ($images as $image) {
+			$parts[] = ['type' => 'image_url', 'image_url' => ['url' => 'data:' . $image['type'] . ';base64,' . $image['data']]];
+		}
+		return $parts;
 	}
 
 	public function listModels(): array {

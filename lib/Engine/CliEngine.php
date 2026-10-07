@@ -62,47 +62,83 @@ class CliEngine implements IEngine {
 		return $this->provider . '-cli';
 	}
 
+	/** $elevated is part of the engine interface and changes nothing here: no run gets more tools than the settings allow. */
 	public function run(array $history, string $message, string $systemPrompt, bool $elevated = false, array $options = []): TurnResult {
 		$binary = $this->config->getCliPath($this->provider);
 		if ($binary === '') {
 			return TurnResult::error('No command line tool is configured.');
 		}
 
-		$prompt = $this->buildPrompt($history, $message);
-		$model = $this->model ?? $this->config->getModel($this->provider);
-		$tools = $elevated ? $this->config->getAdminTools() : $this->config->getUserTools();
-		if (array_key_exists('search', $options)) {
-			// Asked for by another app (AssistantService): its tools are exactly what it
-			// asked for -- web search or nothing -- whatever the hub's own settings say.
-			// Only the search: fetching a page would run on this server and could reach
-			// the network it stands in.
-			$elevated = false;
-			$tools = ($options['search'] && $this->provider === 'claude') ? 'WebSearch' : '';
+		// Images that go with this question: those of the question itself and, in a tool
+		// round, those of the question that is now in the history. Only the Claude tool
+		// takes them (as image blocks of a stream-json message); Gemini's tool reads an
+		// image only through a file tool, and every tool is switched off here.
+		$images = [];
+		foreach ($history as $turn) {
+			foreach ($turn['images'] ?? [] as $image) {
+				$images[] = $image;
+			}
+		}
+		foreach ($options['images'] ?? [] as $image) {
+			$images[] = $image;
+		}
+		if ($images !== [] && $this->provider !== 'claude') {
+			return TurnResult::error('no-images');
 		}
 
+		// Every question carries the conversation so far: the hub keeps the transcript,
+		// and the tool keeps nothing of its own (see --no-session-persistence below).
+		$prompt = $this->buildPrompt($history, $message);
+		$model = $this->model ?? $this->config->getModel($this->provider);
+		// The tools the command line may use. For a scenario asked by an app, exactly
+		// what the hub asked for -- web search or nothing -- whatever the settings say
+		// (only the search: fetching a page would run on this server and could reach
+		// the network it stands in). For Nextcloud's own Task Processing, which passes
+		// no options, the administrator's list for users. Nothing ever runs with more,
+		// whoever is asking: a chat message cannot become a command on this server.
+		$tools = array_key_exists('search', $options)
+			? (($options['search'] && $this->provider === 'claude') ? 'WebSearch' : '')
+			: $this->config->getUserTools();
+
 		if ($this->provider === 'gemini') {
-			// "--prompt=…" in one piece, so a message starting with "-" is never read as an option (review T11).
-			$argv = [$binary, '-m', $model, '--prompt=' . $systemPrompt . "\n\n" . $prompt];
-			if ($elevated && $tools !== '') {
-				// Gemini's tools cannot be listed one by one; it is all or nothing.
-				$argv[] = '--yolo';
-			} else {
-				// Nothing was switched off before: Gemini's own rules let read_file,
-				// glob and grep_search run unasked, so an ordinary user could have it
-				// read the credentials in its home (review T2). An admin policy that
-				// denies every tool outranks those rules.
-				$argv[] = '--admin-policy';
-				$argv[] = __DIR__ . '/policy/no-tools.toml';
-			}
+			// The prompt goes in on stdin, which the tool reads as its prompt when it
+			// is not a terminal: as an argument it ran into the kernel's limit once a
+			// document's context came along. Nothing was switched off before: Gemini's
+			// own rules let read_file, glob and grep_search run unasked, so an ordinary
+			// user could have it read the credentials in its home (review T2). An admin
+			// policy that denies every tool outranks those rules.
+			$argv = [$binary, '-m', $model, '--admin-policy', __DIR__ . '/policy/no-tools.toml'];
+			$stdin = $systemPrompt . "\n\n" . $prompt;
 		} else {
+			$stdin = $prompt;
 			// The prompt goes in on stdin, not as an argument: the whole conversation in
 			// one argument ran past the kernel's 128 KiB limit after ten exchanges or so,
 			// and every user of the machine could read it in the process list (review T6).
+			// With images, stdin is one stream-json user message instead -- the image
+			// blocks and then the prompt -- which the tool takes only with stream-json
+			// output; the answer is then read from its "result" event (see streamResult).
+			// Nothing of the run is kept on disk: the tool would otherwise write every
+			// question and answer into a session file under its home (.claude/projects),
+			// one more for each question, and nothing ever reads them back -- the
+			// conversation so far is in the prompt (2026-10-06).
+			$format = ['--output-format', 'text', '--no-session-persistence'];
+			if ($images !== []) {
+				$content = [];
+				foreach ($images as $image) {
+					$content[] = ['type' => 'image', 'source' => ['type' => 'base64', 'media_type' => $image['type'], 'data' => $image['data']]];
+				}
+				if (trim($prompt) !== '') {
+					$content[] = ['type' => 'text', 'text' => $prompt];
+				}
+				$stdin = json_encode(['type' => 'user', 'message' => ['role' => 'user', 'content' => $content]], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE) . "\n";
+				// Not kept on disk either (the images too would go into the session file).
+				$format = ['--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose', '--no-session-persistence'];
+			}
 			$argv = [
 				$binary,
 				'-p',
 				'--model', $model,
-				'--output-format', 'text',
+				...$format,
 				// An empty list really does disable every tool: the model then has
 				// no way to touch the server, whatever the message asks for.
 				'--tools', $tools,
@@ -115,41 +151,69 @@ class CliEngine implements IEngine {
 				// but the web search.
 				$argv[] = '--strict-mcp-config';
 			}
-			if ($elevated && $tools !== '') {
-				// Tools cannot be approved interactively from a chat message, so
-				// running them at all requires this.
-				$argv[] = '--dangerously-skip-permissions';
-			}
 		}
 
-		if ($elevated && $tools !== '') {
-			$this->logger->warning('AI-Hub: running the command line tool with tools enabled for an administrator', [
-				'provider' => $this->provider,
-				'tools' => $tools,
-			]);
-		}
-
-		$run = $this->exec($argv, $this->config->getRequestTimeout(), $elevated && $tools !== '', $this->provider === 'gemini' ? null : $prompt);
+		$run = $this->exec($argv, $this->config->getRequestTimeout(), $stdin);
 		$combined = $run['stdout'] . "\n" . $run['stderr'];
 
 		if ($run['timedOut']) {
-			return TurnResult::error('The command line tool did not answer in time.');
-		}
-		if ($this->looksLikeAuthFailure($combined) && $run['code'] !== 0) {
-			return TurnResult::authError(trim(mb_substr($combined, 0, 300)));
+			$result = TurnResult::error('The command line tool did not answer in time.');
+		} elseif ($this->looksLikeAuthFailure($combined) && $run['code'] !== 0) {
+			$result = TurnResult::authError(trim(mb_substr($combined, 0, 300)));
+		} elseif ($images !== [] && ($event = $this->streamResult($run['stdout'])) !== null) {
+			// The stream-json run: its "result" event holds the answer, or the error.
+			$text = trim((string)($event['result'] ?? ''));
+			if ($text !== '' && preg_match('//u', $text) !== 1) {
+				$text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+			}
+			if (!empty($event['is_error']) || ($event['subtype'] ?? 'success') !== 'success') {
+				$detail = $text !== '' ? $text : trim($run['stderr']);
+				$result = $this->looksLikeAuthFailure($detail)
+					? TurnResult::authError(mb_substr($detail, 0, 300))
+					: TurnResult::error($detail !== '' ? mb_substr($detail, 0, 500) : 'The command line tool returned nothing.');
+			} else {
+				$result = $text !== '' ? TurnResult::ok($text) : TurnResult::error('The command line tool returned nothing.');
+			}
+		} elseif ($images !== []) {
+			$stderr = trim($run['stderr']);
+			$result = TurnResult::error($stderr !== '' ? mb_substr($stderr, 0, 500) : 'The command line tool returned nothing.');
+		} else {
+			// A command line tool can emit a stray non-UTF-8 byte; drop it here so the
+			// answer both stores cleanly and survives json_encode on its way to the app.
+			$output = trim($run['stdout']);
+			if ($output !== '' && preg_match('//u', $output) !== 1) {
+				$output = mb_convert_encoding($output, 'UTF-8', 'UTF-8');
+			}
+			if ($output !== '') {
+				$result = TurnResult::ok($output);
+			} else {
+				$stderr = trim($run['stderr']);
+				$result = TurnResult::error($stderr !== '' ? mb_substr($stderr, 0, 500) : 'The command line tool returned nothing.');
+			}
 		}
 
-		// A command line tool can emit a stray non-UTF-8 byte; drop it here so the
-		// answer both stores cleanly and survives json_encode on its way to the app.
-		$output = trim($run['stdout']);
-		if ($output !== '' && preg_match('//u', $output) !== 1) {
-			$output = mb_convert_encoding($output, 'UTF-8', 'UTF-8');
+		return $result;
+	}
+
+	/**
+	 * The last "result" event of a stream-json run: the answer ('result') and whether
+	 * the run failed ('is_error', 'subtype'). Null when the run printed none.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function streamResult(string $stdout): ?array {
+		$found = null;
+		foreach (preg_split('/\r?\n/', $stdout) ?: [] as $line) {
+			$line = trim($line);
+			if ($line === '' || $line[0] !== '{') {
+				continue;
+			}
+			$event = json_decode($line, true);
+			if (is_array($event) && ($event['type'] ?? '') === 'result') {
+				$found = $event;
+			}
 		}
-		if ($output !== '') {
-			return TurnResult::ok($output);
-		}
-		$stderr = trim($run['stderr']);
-		return TurnResult::error($stderr !== '' ? mb_substr($stderr, 0, 500) : 'The command line tool returned nothing.');
+		return $found;
 	}
 
 	public function listModels(): array {
@@ -232,7 +296,7 @@ class CliEngine implements IEngine {
 		if ($binary === '' || $this->provider !== 'claude') {
 			return ['ok' => true, 'resolved' => $model, 'detail' => ''];
 		}
-		$run = $this->exec([$binary, '-p', '--model', $model, '--output-format', 'json', '--tools', ''], 120, false, 'Reply with OK');
+		$run = $this->exec([$binary, '-p', '--model', $model, '--output-format', 'json', '--no-session-persistence', '--tools', ''], 120, 'Reply with OK');
 		$out = json_decode(trim($run['stdout']), true);
 		if (!is_array($out)) {
 			$detail = trim($run['stdout'] . ' ' . $run['stderr']);
@@ -291,16 +355,6 @@ class CliEngine implements IEngine {
 		if ($history === []) {
 			return $message;
 		}
-		// Gemini still takes the prompt as an argument: the oldest exchanges go first
-		// until it fits well inside the kernel's limit (review T6).
-		if ($this->provider === 'gemini') {
-			while ($history !== [] && strlen(implode("\n", array_column($history, 'text'))) + strlen($message) > 100000) {
-				array_shift($history);
-			}
-			if ($history === []) {
-				return $message;
-			}
-		}
 		$lines = ['Conversation so far:'];
 		foreach ($history as $turn) {
 			$who = $turn['role'] === 'assistant' ? 'Assistant' : 'User';
@@ -324,17 +378,22 @@ class CliEngine implements IEngine {
 	 * @param list<string> $argv
 	 * @return array{code: int, stdout: string, stderr: string, timedOut: bool}
 	 */
-	private function exec(array $argv, int $timeout, bool $inHome = false, ?string $stdin = null): array {
+	private function exec(array $argv, int $timeout, ?string $stdin = null): array {
 		$env = ['PATH' => getenv('PATH') ?: '/usr/local/bin:/usr/bin:/bin'];
 		$home = $this->config->getCliHome();
 		if ($home !== '') {
 			$env['HOME'] = $home;
 		}
-		// An administrator's run with tools works in the tool's own home, so its project
-		// settings and notes stay in one place. Anybody else's run works in an empty
-		// folder made for that message: the home holds the tool's login, and the
-		// folder a tool works in is the folder it can read (review T2).
-		$cwd = ($inHome && is_dir($home)) ? $home : ($this->tempManager->getTemporaryFolder() ?: sys_get_temp_dir());
+		if ($this->provider === 'claude') {
+			// No memory folder either: even with --no-session-persistence the tool made
+			// .claude/projects/<working folder>/memory under its home for every run, and
+			// every run has a working folder of its own (2026-10-06).
+			$env['CLAUDE_CODE_DISABLE_AUTO_MEMORY'] = '1';
+		}
+		// Every run works in an empty folder made for that message: the home holds
+		// the tool's login, and the folder a tool works in is the folder it can read
+		// (review T2).
+		$cwd = $this->tempManager->getTemporaryFolder() ?: sys_get_temp_dir();
 
 		// In a session of its own, so a timeout can end the tool and everything it started (review T13).
 		$setsid = is_executable('/usr/bin/setsid') ? '/usr/bin/setsid' : (is_executable('/bin/setsid') ? '/bin/setsid' : '');
@@ -350,9 +409,12 @@ class CliEngine implements IEngine {
 			$this->logger->error('AI-Hub: could not start ' . $argv[0]);
 			return ['code' => -1, 'stdout' => '', 'stderr' => 'Could not start ' . $argv[0], 'timedOut' => false];
 		}
+		// stdin is written as the tool takes it, between reads of its output: a large
+		// one (images run to megabytes) written in one go could fill the pipe while the
+		// tool waits for us to read what it printed, and neither would move again.
+		$pending = $stdin ?? '';
 		if ($stdin !== null) {
-			fwrite($pipes[0], $stdin);
-			fclose($pipes[0]);
+			stream_set_blocking($pipes[0], false);
 		}
 
 		stream_set_blocking($pipes[1], false);
@@ -367,6 +429,20 @@ class CliEngine implements IEngine {
 		$exit = null;
 
 		while (true) {
+			$wrote = 0;
+			if ($stdin !== null && is_resource($pipes[0])) {
+				while ($pending !== '') {
+					$n = @fwrite($pipes[0], substr($pending, 0, 65536));
+					if ($n === false || $n === 0) {
+						break;
+					}
+					$pending = (string)substr($pending, $n);
+					$wrote += $n;
+				}
+				if ($pending === '' || $n === false) {
+					fclose($pipes[0]);
+				}
+			}
 			$stdout .= (string)stream_get_contents($pipes[1]);
 			$stderr .= (string)stream_get_contents($pipes[2]);
 
@@ -383,7 +459,11 @@ class CliEngine implements IEngine {
 				proc_terminate($process, 9);
 				break;
 			}
-			usleep(100000);
+			// Waiting on the tool; only a brief pause while stdin is still going in.
+			usleep($wrote > 0 || ($stdin !== null && is_resource($pipes[0])) ? 5000 : 100000);
+		}
+		if ($stdin !== null && is_resource($pipes[0])) {
+			fclose($pipes[0]);
 		}
 
 		$stdout .= (string)stream_get_contents($pipes[1]);

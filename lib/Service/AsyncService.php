@@ -54,7 +54,9 @@ class AsyncService {
 						'X-AIHub-Signature' => $this->sign($body),
 					],
 					'body' => $body,
-					'timeout' => self::HANDOFF_TIMEOUT,
+					// A question with images can run to megabytes: give the body time to
+					// arrive whole (a second more for every 4 MB), or the handler never runs.
+					'timeout' => self::HANDOFF_TIMEOUT + intdiv(strlen($body), 4 << 20),
 					'connect_timeout' => 10,
 					'nextcloud' => ['allow_local_address' => true],
 				],

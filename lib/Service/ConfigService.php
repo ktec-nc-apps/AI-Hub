@@ -43,7 +43,6 @@ class ConfigService {
 		'gemini_cli_path' => ['gemini_cli_path', 'string', 'gemini'],
 		'cli_home' => ['cli_home', 'string', ''],
 		'cli_user_tools' => ['cli_user_tools', 'string', ''],
-		'cli_admin_tools' => ['cli_admin_tools', 'string', ''],
 		'rate_per_minute' => ['rate_per_minute', 'int', 10],
 		'max_parallel_user' => ['max_parallel_user', 'int', 2],
 		'max_parallel_total' => ['max_parallel_total', 'int', 4],
@@ -206,28 +205,14 @@ class ConfigService {
 	}
 
 	/**
-	 * Which tools of the command line tool ordinary users may reach.
+	 * Which tools of the command line tool Nextcloud's own Task Processing (the
+	 * Assistant) and the connection test may reach. A scenario asked by an app
+	 * gets web search or nothing, whatever this says.
 	 *
 	 * Empty — the default — means none at all: the model can only answer.
 	 */
 	public function getUserTools(): string {
 		return $this->getString('cli_user_tools');
-	}
-
-	/**
-	 * Which tools Nextcloud administrators may reach.
-	 *
-	 * Empty — the default — means administrators get exactly what everyone else
-	 * gets. Setting it (for example to "default") hands anyone in the admin group
-	 * real access to this server through a chat message, so it has to be a
-	 * deliberate choice.
-	 */
-	public function getAdminTools(): string {
-		return $this->getString('cli_admin_tools');
-	}
-
-	public function areAdminToolsEnabled(): bool {
-		return $this->getAdminTools() !== '';
 	}
 
 	// -- limits (0 = no limit) ----------------------------------------------
@@ -301,6 +286,38 @@ class ConfigService {
 		$this->setString('app_engines', json_encode($all, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}');
 	}
 
+	/** The longest additional prompt an administrator may give one app. */
+	public const APP_PROMPT_MAX = 4000;
+
+	/** @return array<string, string> app => the administrator's additional prompt for it */
+	public function getAppPrompts(): array {
+		$raw = json_decode($this->getString('app_prompts', '{}'), true);
+		$out = [];
+		foreach (is_array($raw) ? $raw : [] as $app => $text) {
+			if (is_string($app) && is_string($text) && trim($text) !== '') {
+				$out[$app] = mb_substr($text, 0, self::APP_PROMPT_MAX);
+			}
+		}
+		return $out;
+	}
+
+	/** The administrator's additional prompt for one app ('' = none). */
+	public function getAppPrompt(string $app): string {
+		return $this->getAppPrompts()[$app] ?? '';
+	}
+
+	/** Set (or with '' remove) the administrator's additional prompt for one app. */
+	public function setAppPrompt(string $app, string $text): void {
+		$all = $this->getAppPrompts();
+		$text = trim(str_replace("\r\n", "\n", $text));
+		if ($text === '') {
+			unset($all[$app]);
+		} else {
+			$all[$app] = mb_substr($text, 0, self::APP_PROMPT_MAX);
+		}
+		$this->setString('app_prompts', json_encode($all, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}');
+	}
+
 	/**
 	 * The engine that answers this app, with every blank filled from the
 	 * server-wide settings: provider, mode (an OpenAI-compatible endpoint is always
@@ -348,6 +365,53 @@ class ConfigService {
 		}
 		$all[$app] = ['scenarios' => $scenarios, 'seen' => time()];
 		$this->setString('apps_seen', json_encode($all, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}');
+	}
+
+	// -- apps the administrator added by hand -------------------------------------
+	// Ids the admin put in, so an app can be listed and given its own engine before
+	// it has ever connected. Stored as a JSON array of app ids.
+
+	/** @return list<string> App ids the administrator added. */
+	public function getManagedApps(): array {
+		$raw = json_decode($this->getString('managed_apps', '[]'), true);
+		$out = [];
+		foreach (is_array($raw) ? $raw : [] as $app) {
+			if (is_string($app) && preg_match('/^[a-z][a-z0-9_]{1,63}$/', $app)) {
+				$out[] = $app;
+			}
+		}
+		return array_values(array_unique($out));
+	}
+
+	/** Add an app id to the managed list. A no-op when it is already there. */
+	public function addManagedApp(string $app): void {
+		$all = $this->getManagedApps();
+		if (in_array($app, $all, true)) {
+			return;
+		}
+		$all[] = $app;
+		$this->setString('managed_apps', json_encode(array_values($all), JSON_UNESCAPED_SLASHES) ?: '[]');
+	}
+
+	/**
+	 * Forget an app completely: drop it from the managed list, from its per-app
+	 * engine override and from the record that it ever connected.
+	 */
+	public function forgetApp(string $app): void {
+		$managed = array_values(array_filter($this->getManagedApps(), static fn (string $a): bool => $a !== $app));
+		$this->setString('managed_apps', json_encode($managed, JSON_UNESCAPED_SLASHES) ?: '[]');
+
+		$engines = $this->getAppEngines();
+		if (isset($engines[$app])) {
+			unset($engines[$app]);
+			$this->setString('app_engines', json_encode($engines, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}');
+		}
+
+		$seen = $this->getAppsSeen();
+		if (isset($seen[$app])) {
+			unset($seen[$app]);
+			$this->setString('apps_seen', json_encode($seen, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}');
+		}
 	}
 
 	public function getRequestTimeout(): int {

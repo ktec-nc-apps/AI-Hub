@@ -24,7 +24,7 @@ An app reaches only its own scenarios and the tools it registered. Tools run wit
 
 Talk-Bot and EditBase from the same makers are moving their AI onto AI-Hub.
 ]]></description>
-	<version>0.0.1</version>
+	<version>0.1.0</version>
 	<licence>agpl</licence>
 	<author mail="info@popup.jp" homepage="https://github.com/ktec-nc-apps">KTEC</author>
 	<namespace>AIHub</namespace>

@@ -20,7 +20,14 @@ class TurnResult {
 		public readonly string $kind,
 		public readonly string $output,
 		public readonly string $detail,
+		/** A session the hub asked to resume was gone; this came from the history instead. */
+		public readonly bool $sessionLost = false,
 	) {
+	}
+
+	/** The same outcome, marked as answered without the session the hub asked for. */
+	public function withSessionLost(): self {
+		return new self($this->kind, $this->output, $this->detail, true);
 	}
 
 	public static function ok(string $output): self {

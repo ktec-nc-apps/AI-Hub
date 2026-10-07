@@ -22,6 +22,9 @@
 		return (root && root.getAttribute('data-i18n-' + name)) || name;
 	}
 
+	/** The longest additional prompt the server keeps (ConfigService::APP_PROMPT_MAX). */
+	var PROMPT_MAX = 4000;
+
 	function url(path) {
 		return OC.generateUrl('/apps/ai_hub' + path);
 	}
@@ -185,6 +188,25 @@
 		return o;
 	}
 
+	/**
+	 * Add the fetched models to a row's model select without duplicates, keeping
+	 * whatever is selected now ("Server-wide" or the app's own model).
+	 */
+	function mergeModels(select, models) {
+		var have = {};
+		var current = select.value;
+		Array.prototype.forEach.call(select.options, function (o) {
+			have[o.value] = true;
+		});
+		(models || []).forEach(function (m) {
+			if (!have[m]) {
+				have[m] = true;
+				select.appendChild(option(m, m, false));
+			}
+		});
+		select.value = current;
+	}
+
 	function gets(app) {
 		var g = app.gets || {};
 		var text = g.provider + ' / ' + g.mode + (g.model ? ' — ' + g.model : '');
@@ -234,21 +256,21 @@
 		tdM.appendChild(mode);
 		tr.appendChild(tdM);
 
-		var model = document.createElement('input');
-		model.type = 'text';
+		// The model is a real select: "Server-wide" first, then the app's own model
+		// if one is set, and -- once the Models button has fetched them -- every model
+		// the chosen engine offers.
+		var model = document.createElement('select');
 		model.className = 'tb-app-model';
-		model.value = own.model || '';
-		model.placeholder = (app.gets && app.gets.model) || word('serverwide');
-		model.setAttribute('list', 'tb-models-' + app.id);
-		var list = document.createElement('datalist');
-		list.id = 'tb-models-' + app.id;
+		model.appendChild(option('', word('serverwide'), !own.model));
+		if (own.model) {
+			model.appendChild(option(own.model, own.model, true));
+		}
 		var modelsButton = document.createElement('button');
 		modelsButton.type = 'button';
 		modelsButton.className = 'button tb-app-models';
 		modelsButton.textContent = word('models');
 		var tdModel = document.createElement('td');
 		tdModel.appendChild(model);
-		tdModel.appendChild(list);
 		tdModel.appendChild(modelsButton);
 		tr.appendChild(tdModel);
 
@@ -269,12 +291,82 @@
 		test.textContent = word('test');
 		tdAct.appendChild(save);
 		tdAct.appendChild(test);
+
+		// Only admin-added and auto-discovered rows can be removed; the fixed rows
+		// (the Base series and Task Processing) have no trash. The trash stays usable
+		// even for an app that is not installed, so a stale entry can be cleared.
+		var remove = null;
+		if (!app.fixed) {
+			remove = document.createElement('button');
+			remove.type = 'button';
+			remove.className = 'button tb-app-remove';
+			remove.textContent = '🗑 ' + word('remove');
+			remove.title = word('removetitle');
+			remove.setAttribute('aria-label', word('removetitle'));
+			tdAct.appendChild(remove);
+			remove.addEventListener('click', function () {
+				remove.disabled = true;
+				request('POST', '/tools/app/delete', { app: app.id }).then(function (data) {
+					if (tr.parentNode) {
+						tr.parentNode.removeChild(tr);
+					}
+					if (tr.promptRow && tr.promptRow.parentNode) {
+						tr.promptRow.parentNode.removeChild(tr.promptRow);
+					}
+					sayIn('tb-apps-result', (data && data.mayReappear) ? word('mayreappear') : '', true);
+					loadCompatible();
+				}).catch(function (error) {
+					remove.disabled = false;
+					sayIn('tb-apps-result', error.message, false);
+				});
+			});
+		}
 		tr.appendChild(tdAct);
 
-		// An app that is not installed is shown greyed out, with nothing to set.
-		if (!app.installed) {
+		// A fixed row (the Base series, Task Processing) that is not installed is
+		// greyed out with nothing to set. An admin-added or auto-discovered row stays
+		// configurable even when not installed -- the admin listed it on purpose, and
+		// "What it gets" already shows it is not installed -- and keeps its trash.
+		// The administrator's additional prompt for this app: a row of its own under the
+		// app, folded until opened, saved with the row's Save button.
+		var promptRow = document.createElement('tr');
+		promptRow.className = 'tb-app-prompt-row';
+		promptRow.setAttribute('data-app-prompt', app.id);
+		var tdPrompt = document.createElement('td');
+		tdPrompt.colSpan = 6;
+		var details = document.createElement('details');
+		details.className = 'tb-app-prompt';
+		var summary = document.createElement('summary');
+		var promptArea = document.createElement('textarea');
+		promptArea.className = 'tb-app-prompt-text';
+		promptArea.rows = 5;
+		promptArea.maxLength = PROMPT_MAX;
+		promptArea.placeholder = word('promptph');
+		promptArea.value = app.prompt || '';
+		promptArea.setAttribute('aria-label', word('prompt') + ' — ' + app.label);
+		var count = document.createElement('small');
+		count.className = 'tb-app-prompt-count';
+		var hint = document.createElement('p');
+		hint.className = 'settings-hint';
+		hint.textContent = word('prompthint');
+		var label = function () {
+			summary.textContent = word('prompt') + (promptArea.value.trim() ? ' (' + word('promptset') + ')' : '');
+			count.textContent = word('promptlen').replace('{n}', promptArea.value.length).replace('{max}', PROMPT_MAX);
+		};
+		label();
+		promptArea.addEventListener('input', label);
+		details.appendChild(summary);
+		details.appendChild(promptArea);
+		details.appendChild(count);
+		details.appendChild(hint);
+		tdPrompt.appendChild(details);
+		promptRow.appendChild(tdPrompt);
+		tr.promptRow = promptRow;
+
+		if (!app.installed && app.fixed) {
 			tr.classList.add('tb-off');
-			[provider, mode, model, modelsButton, save, test].forEach(function (c) { c.disabled = true; });
+			promptRow.classList.add('tb-off');
+			[provider, mode, model, modelsButton, save, test, promptArea].forEach(function (c) { c.disabled = true; });
 			return tr;
 		}
 
@@ -284,11 +376,7 @@
 				+ '&provider=' + encodeURIComponent(provider.value)
 				+ '&mode=' + encodeURIComponent(mode.value);
 			request('GET', '/tools/models' + q).then(function (data) {
-				list.innerHTML = '';
-				(data.models || []).forEach(function (m) {
-					list.appendChild(option(m, m, false));
-				});
-				model.placeholder = data.current && data.current.model ? data.current.model : word('serverwide');
+				mergeModels(model, data.models);
 				sayIn('tb-apps-result', data.note || t('Loaded {count} models.').replace('{count}', (data.models || []).length), true);
 			}).catch(function (error) {
 				sayIn('tb-apps-result', error.message, false);
@@ -300,11 +388,12 @@
 		save.addEventListener('click', function () {
 			save.disabled = true;
 			request('POST', '/tools/app', {
-				app: app.id, provider: provider.value, mode: mode.value, model: model.value.trim()
+				app: app.id, provider: provider.value, mode: mode.value, model: model.value, prompt: promptArea.value
 			}).then(function (data) {
 				if (data.app) {
 					tdGets.textContent = gets(data.app);
-					model.placeholder = (data.app.gets && data.app.gets.model) || word('serverwide');
+					promptArea.value = data.app.prompt || '';
+					label();
 				}
 				sayIn('tb-apps-result', word('saved'), true);
 			}).catch(function (error) {
@@ -336,6 +425,64 @@
 		return tr;
 	}
 
+	/**
+	 * The apps that declare AI-Hub support (they ship appinfo/ai-hub.json) and are
+	 * not listed yet, offered in the dropdown next to the typed id. Greyed out when
+	 * there is none to pick.
+	 */
+	function loadCompatible() {
+		var select = el('tb-add-app-select');
+		if (!select) {
+			return;
+		}
+		request('GET', '/tools/compatible').then(function (data) {
+			var apps = data.apps || [];
+			while (select.options.length > 1) {
+				select.remove(1);
+			}
+			apps.forEach(function (app) {
+				select.appendChild(option(app.id, app.name + (app.enabled ? '' : ' (' + word('notinstalled') + ')'), false));
+			});
+			select.value = '';
+			select.disabled = apps.length === 0;
+		}).catch(function (error) {
+			sayIn('tb-apps-result', error.message, false);
+		});
+	}
+
+	// The picked app wins; the typed id is the way in for an app without the marker.
+	function addApp() {
+		var select = el('tb-add-app-select');
+		var input = el('tb-add-app-id');
+		var button = el('tb-add-app');
+		if (!input) {
+			return;
+		}
+		var id = (select && !select.disabled && select.value) ? select.value : (input.value || '').trim().toLowerCase();
+		if (!id) {
+			(select && !select.disabled ? select : input).focus();
+			return;
+		}
+		if (button) {
+			button.disabled = true;
+		}
+		request('POST', '/tools/app/add', { app: id }).then(function () {
+			input.value = '';
+			if (select) {
+				select.value = '';
+			}
+			sayIn('tb-apps-result', '', true);
+			loadApps();
+			loadCompatible();
+		}).catch(function (error) {
+			sayIn('tb-apps-result', error.message, false);
+		}).then(function () {
+			if (button) {
+				button.disabled = false;
+			}
+		});
+	}
+
 	function loadApps() {
 		var table = el('tb-apps');
 		var empty = el('tb-apps-empty');
@@ -346,7 +493,11 @@
 			var body = table.querySelector('tbody');
 			body.innerHTML = '';
 			(data.apps || []).forEach(function (app) {
-				body.appendChild(appRow(app));
+				var row = appRow(app);
+				body.appendChild(row);
+				if (row.promptRow) {
+					body.appendChild(row.promptRow);
+				}
 			});
 			var any = (data.apps || []).length > 0;
 			table.classList.toggle('tb-hidden', !any);
@@ -373,6 +524,20 @@
 		if (saveButton) {
 			saveButton.addEventListener('click', saveModel);
 		}
+		var addButton = el('tb-add-app');
+		var addInput = el('tb-add-app-id');
+		if (addButton) {
+			addButton.addEventListener('click', addApp);
+		}
+		if (addInput) {
+			addInput.addEventListener('keydown', function (event) {
+				if (event.key === 'Enter') {
+					event.preventDefault();
+					addApp();
+				}
+			});
+		}
 		loadApps();
+		loadCompatible();
 	});
 })();

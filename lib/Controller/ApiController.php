@@ -21,8 +21,9 @@ use OCP\IUserSession;
  * The hub over HTTP, for the browser side of an app or for a script:
  *
  *   GET  /ocs/v2.php/apps/ai_hub/api/v1/status
- *   POST /ocs/v2.php/apps/ai_hub/api/v1/ask      app, scenario, messages[], context?
+ *   POST /ocs/v2.php/apps/ai_hub/api/v1/ask      app, scenario, messages[], context?, conversation?, images[]?
  *   GET  /ocs/v2.php/apps/ai_hub/api/v1/result/{id}
+ *   POST /ocs/v2.php/apps/ai_hub/api/v1/forget   app, conversation
  *
  * with the user's session (and request token) or an app password, and the
  * header OCS-APIRequest: true.
@@ -48,23 +49,33 @@ class ApiController extends OCSController {
 	}
 
 	/**
-	 * @param list<array{role: string, text: string}> $messages
+	 * @param list<array{role: string, text: string, images?: int}> $messages
+	 * @param list<array{type: string, data: string}> $images Images that go with the last message (see HubService::ask).
 	 */
 	#[NoAdminRequired]
-	public function ask(string $app, string $scenario, array $messages = [], string $context = '', ?bool $search = null): DataResponse {
+	public function ask(string $app, string $scenario, array $messages = [], string $context = '', ?bool $search = null, string $conversation = '', array $images = []): DataResponse {
 		$uid = $this->uid();
 		if ($uid === '') {
 			return new DataResponse(['error' => 'not-logged-in'], Http::STATUS_UNAUTHORIZED);
 		}
-		$options = ['context' => $context];
+		// Marked as coming in over OCS: only a scenario registered with 'ocs' => true
+		// takes it, so an app that gates in its own controller cannot be gone round.
+		$options = ['context' => $context, 'ocs' => true];
 		if ($search !== null) {
 			$options['search'] = $search;
+		}
+		if ($conversation !== '') {
+			$options['conversation'] = $conversation;
+		}
+		if ($images !== []) {
+			$options['images'] = $images;
 		}
 		$out = $this->hub->ask($uid, $app, $scenario, $messages, $options);
 		if (isset($out['error'])) {
 			$status = match ($out['error']) {
-				'user-not-allowed', 'app-not-allowed' => Http::STATUS_FORBIDDEN,
-				'no-scenario', 'empty' => Http::STATUS_BAD_REQUEST,
+				'user-not-allowed', 'app-not-allowed', 'ocs-not-allowed' => Http::STATUS_FORBIDDEN,
+				'no-scenario', 'empty', 'too-many-images', 'image-type' => Http::STATUS_BAD_REQUEST,
+				'image-too-large' => Http::STATUS_REQUEST_ENTITY_TOO_LARGE,
 				'busy' => Http::STATUS_TOO_MANY_REQUESTS,
 				default => Http::STATUS_SERVICE_UNAVAILABLE,
 			};
@@ -80,5 +91,16 @@ class ApiController extends OCSController {
 			return new DataResponse(['state' => 'unknown'], Http::STATUS_UNAUTHORIZED);
 		}
 		return new DataResponse($this->hub->result($uid, $id));
+	}
+
+	/** Drop a remembered conversation (an app's "new conversation"). */
+	#[NoAdminRequired]
+	public function forget(string $app, string $conversation): DataResponse {
+		$uid = $this->uid();
+		if ($uid === '') {
+			return new DataResponse(['error' => 'not-logged-in'], Http::STATUS_UNAUTHORIZED);
+		}
+		$this->hub->forgetConversation($uid, $app, $conversation);
+		return new DataResponse(['ok' => true]);
 	}
 }

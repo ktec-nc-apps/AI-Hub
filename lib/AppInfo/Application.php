@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\AIHub\AppInfo;
 
+use OCA\AIHub\Listener\LogoutListener;
 use OCA\AIHub\Settings\AdminForm;
 use OCA\AIHub\Settings\AdminFormAccess;
 use OCA\AIHub\TaskProcessing\TextToTextChatProvider;
@@ -17,6 +18,7 @@ use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\User\Events\BeforeUserLoggedOutEvent;
 
 class Application extends App implements IBootstrap {
 	public const APP_ID = 'ai_hub';
@@ -28,6 +30,8 @@ class Application extends App implements IBootstrap {
 	public function register(IRegistrationContext $context): void {
 		$context->registerDeclarativeSettings(AdminForm::class);
 		$context->registerDeclarativeSettings(AdminFormAccess::class);
+		// a conversation lasts as long as the login it was held in
+		$context->registerEventListener(BeforeUserLoggedOutEvent::class, LogoutListener::class);
 		// Nextcloud's own Task Processing API: the apps written against it -- the
 		// Assistant among them -- get the connected model without knowing the hub.
 		if (method_exists($context, 'registerTaskProcessingProvider')) {
