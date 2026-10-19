@@ -3,6 +3,16 @@
 All notable changes to AI-Hub are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.1] — 2026-10-19
+
+### Added
+- The administration settings in twenty-one languages: twelve more, Arabic, Czech, Persian, Hindi,
+  Indonesian, Polish, European Portuguese, Russian, Thai, Turkish, Ukrainian and Vietnamese.
+
+### Fixed
+- Translations corrected after a review: the Japanese labels (ready, what each app gets, comma), the
+  Arabic image count for zero, "Home-Verzeichnis" in German, one form of address in Spanish, and others.
+
 ## [0.1.0] — 2026-10-08
 
 ### Added
