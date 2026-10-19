@@ -34,7 +34,7 @@
         "For example https://openrouter.ai/api/v1, https://api.openai.com/v1 or http://localhost:11434/v1": "Zum Beispiel https://openrouter.ai/api/v1, https://api.openai.com/v1 oder http://localhost:11434/v1",
         "Gemini API key": "Gemini API-Schlüssel",
         "Has not connected yet": "Hat sich noch nicht verbunden",
-        "Home directory for the command line tool": "Stammverzeichnis für das Kommandozeilen-Tool",
+        "Home directory for the command line tool": "Home-Verzeichnis für das Kommandozeilen-Tool",
         "How": "Anbindung",
         "How to reach it": "Wie es erreicht wird",
         "Keys, access and limits": "Schlüssel, Zugriff und Limits",

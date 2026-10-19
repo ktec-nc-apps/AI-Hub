@@ -40,7 +40,7 @@ OC.L10N.register(
     "How to reach it": "Como acessá-lo",
     "Keys, access and limits": "Chaves, acesso e limites",
     "Load models": "Carregar modelos",
-    "Loaded {count} models.": "Carregou {count} modelos.",
+    "Loaded {count} models.": "{count} modelos carregados.",
     "Model": "Modelo",
     "Model and connection test": "Teste de conexão e modelo",
     "Model set to {model}.": "Modelo definido como {model}.",

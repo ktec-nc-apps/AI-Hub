@@ -8,7 +8,7 @@ OC.L10N.register(
     "AI-Hub": "AI-Hub",
     "AI-Hub is not a client of itself.": "AI-Hub n'est pas un client de lui-même.",
     "API key": "Clé API",
-    "API key for the OpenAI-compatible endpoint": "Clé API (compatible OpenAI)",
+    "API key for the OpenAI-compatible endpoint": "Clé API pour le point de terminaison compatible OpenAI",
     "API key is set.": "La clé API est définie.",
     "Add": "Ajouter",
     "Add an app": "Ajouter une application",

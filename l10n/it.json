@@ -76,7 +76,7 @@
         "The command line tool ended with exit code %s.": "Lo strumento a riga di comando è terminato con codice di uscita %s.",
         "This app is installed, so it may appear again while it is enabled.": "Questa app è installata, quindi potrebbe riapparire finché è abilitata.",
         "Use this model": "Usa questo modello",
-        "What is ready to use": "Disponibilità del motore",
+        "What is ready to use": "Cosa è pronto all'uso",
         "What it gets": "Cosa utilizza",
         "When off, every user of this server may ask through the apps that use AI-Hub.": "Se disattivato, ogni utente di questo server può inviare richieste tramite le app che si avvalgono di AI-Hub.",
         "Where the tool keeps its login. Must be readable and writable by the web server user.": "Percorso in cui lo strumento salva le credenziali di accesso. Deve essere leggibile e scrivibile dall'utente del server web.",
@@ -100,7 +100,7 @@
         "%s (summary)": "%s (riepilogo)",
         "Conversation": "Conversazione",
         "Date": "Data",
-        "You": "Lei",
+        "You": "Tu",
         "_[%n image]_::_[%n images]_": [
             "[%n immagine]",
             "[%n immagini]"
