@@ -42,7 +42,10 @@ class LimitService {
 			}
 		}
 		// A crashed answer must not hold its place forever: the counters expire after the longest wait.
-		$ttl = $this->config->getRequestTimeout() + 120;
+		// One question may call the model HubService::MAX_ROUNDS times, each up to the request
+		// timeout: a counter that lapsed sooner let a running question's release take the
+		// place of one that came after it, and the limit was passed.
+		$ttl = HubService::MAX_ROUNDS * ($this->config->getRequestTimeout() + 15) + 120;
 		$taken = [];
 		foreach (['run_user_' . $userId => $this->config->getMaxParallelPerUser(), 'run_total' => $this->config->getMaxParallelTotal()] as $key => $max) {
 			if ($max === 0) {

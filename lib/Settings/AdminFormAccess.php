@@ -96,7 +96,7 @@ class AdminFormAccess implements IDeclarativeSettingsFormWithHandlers {
 				[
 					'id' => 'allowed_apps',
 					'title' => $this->l->t('Apps that may ask'),
-					'description' => $this->l->t('Comma-separated app IDs, for example editbase, ktec_talkbot. Empty = every app on this server that registers a scenario.'),
+					'description' => $this->l->t('Comma-separated app IDs, for example editbase, ktec_talkbot. Empty = every app on this server that registers a scenario. Nextcloud\'s own Assistant is not limited by this list.'),
 					'type' => DeclarativeSettingsTypes::TEXT,
 					'placeholder' => $this->l->t('empty = every app'),
 					'default' => '',

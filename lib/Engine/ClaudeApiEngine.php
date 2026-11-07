@@ -16,13 +16,14 @@ class ClaudeApiEngine extends AbstractHttpEngine {
 	private const VERSION = '2023-06-01';
 
 	/** Shown when no key is set yet, so the model dropdown is never empty. */
-	private const KNOWN_MODELS = [
+	public const KNOWN_MODELS = [
 		'claude-fable-5-1',
 		'claude-opus-5-5',
 		'claude-sonnet-5-5',
 		'claude-fable-5',
 		'claude-opus-5',
 		'claude-sonnet-5',
+		'claude-haiku-5-5',
 		'claude-haiku-4-5',
 	];
 
@@ -53,6 +54,10 @@ class ClaudeApiEngine extends AbstractHttpEngine {
 			'system' => $systemPrompt,
 			'messages' => $messages,
 		];
+		if (($effort = $this->config->getEffort()) !== '') {
+			// set in the admin settings; left out, the model uses its own default
+			$body['output_config'] = ['effort' => $effort];
+		}
 		if (!empty($options['search'])) {
 			// Anthropic's own web search: it runs on their side, so it reaches the
 			// internet and never the network this server stands in.

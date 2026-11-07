@@ -3,6 +3,37 @@
 All notable changes to AI-Hub are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.3] — 2026-11-07
+
+### Added
+- Signing in again from the administration settings: when the Claude command line tool's sign-in has
+  run out, "Sign-in of the Claude command line tool" shows its state and walks through signing in
+  again (open the link, sign in, paste the code), without a shell on the server.
+- Default model and effort in the administration settings: pick the model every app uses unless it
+  has its own (from the list, or type a name under "Other"), whatever the command line tool is set
+  to, and how hard Claude thinks before answering (low to max, or the model's default). The effort
+  goes to the Claude API (`output_config.effort`) and the command line tool (`--effort`); Gemini and
+  OpenAI-compatible services ignore it. "Load models" fills the same list.
+- AI-Hub is listed in the App Store's AI category as well.
+
+### Changed
+- A sign-in that has run out ("Failed to authenticate: OAuth session expired …") is now recognized as
+  one: the person asking is told, in their own language, to ask an administrator to sign in again,
+  and the connection test points to the sign-in, instead of the tool's raw English message coming
+  back as an answer.
+- Nextcloud's own Task Processing (the Assistant) now goes through the same allowlist of users and the
+  same limits on questions a minute and at once as the apps. "Allowed apps" does not shut it out.
+- A system prompt too long to pass as an argument (a long document's context) goes to the Claude
+  command line tool on stdin, so the tool no longer fails to start.
+
+### Fixed
+- A question with many tool calls could be lost while still running, and its slot under the limit on
+  questions at once could lapse early and let one more through: both are now kept as long as the
+  question can run.
+- A conversation cut to its last turns always starts with a question, which the model's API requires.
+- Summing up a saved conversation follows the app's rule on who may ask.
+- Remembered conversations are no longer swept away with old answers.
+
 ## [0.1.1] — 2026-10-19
 
 ### Added

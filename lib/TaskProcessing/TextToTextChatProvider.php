@@ -49,9 +49,11 @@ class TextToTextChatProvider extends TextToTextProvider {
 			}
 			$role = $role === 'user' ? 'assistant' : 'user';
 		}
-		$result = $this->engines->forApp('taskprocessing')->run($history, $message, $system);
+		$result = $this->runAdmitted($userId, fn () => $this->engines->forApp('taskprocessing')->run($history, $message, $system));
 		if (!$result->isOk()) {
-			throw new \RuntimeException($result->detail !== '' ? $result->detail : 'The model gave no answer.');
+			throw new \RuntimeException($result->kind === \OCA\AIHub\Engine\TurnResult::KIND_AUTH_ERROR
+				? \OCP\Server::get(\OCP\L10N\IFactory::class)->get('ai_hub')->t('The AI service is not signed in, so it cannot answer. Ask an administrator to sign in again in Administration settings → AI-Hub.')
+				: ($result->detail !== '' ? $result->detail : 'The model gave no answer.'));
 		}
 		return ['output' => $result->output];
 	}

@@ -37,6 +37,13 @@ class CliEngine implements IEngine {
 	/** Short names the tool resolves to the newest model of a family itself. */
 	public const CLAUDE_ALIASES = ['fable', 'opus', 'sonnet', 'haiku'];
 
+	/**
+	 * The most of the system prompt passed as an argument, in bytes. Linux takes no single
+	 * argument over 128 KiB (MAX_ARG_STRLEN): a longer one -- a document's context -- made
+	 * the tool fail to start at all. Past this it goes in on stdin, ahead of the prompt.
+	 */
+	public const MAX_ARG_BYTES = 100000;
+
 	private const GEMINI_MODELS = [
 		'gemini-2.5-pro',
 		'gemini-2.5-flash',
@@ -110,6 +117,11 @@ class CliEngine implements IEngine {
 			$argv = [$binary, '-m', $model, '--admin-policy', __DIR__ . '/policy/no-tools.toml'];
 			$stdin = $systemPrompt . "\n\n" . $prompt;
 		} else {
+			if (strlen($systemPrompt) > self::MAX_ARG_BYTES) {
+				$prompt = "Instructions for this conversation (follow them as your system prompt):\n<instructions>\n"
+					. $systemPrompt . "\n</instructions>\n\n" . $prompt;
+				$systemPrompt = '';
+			}
 			$stdin = $prompt;
 			// The prompt goes in on stdin, not as an argument: the whole conversation in
 			// one argument ran past the kernel's 128 KiB limit after ten exchanges or so,
@@ -138,12 +150,16 @@ class CliEngine implements IEngine {
 				$binary,
 				'-p',
 				'--model', $model,
+				// the effort set in the admin settings (owner, 2026-11-07); without it the tool's own
+				...(($effort = $this->config->getEffort()) !== '' ? ['--effort', $effort] : []),
 				...$format,
 				// An empty list really does disable every tool: the model then has
 				// no way to touch the server, whatever the message asks for.
 				'--tools', $tools,
-				'--append-system-prompt', $systemPrompt,
 			];
+			if ($systemPrompt !== '') {
+				array_push($argv, '--append-system-prompt', $systemPrompt);
+			}
 			if (array_key_exists('search', $options)) {
 				// No MCP servers either. The account the tool is signed in with can bring
 				// connectors of its own -- Gmail, Calendar, Drive and Docs were offered to
@@ -367,7 +383,9 @@ class CliEngine implements IEngine {
 
 	private function looksLikeAuthFailure(string $text): bool {
 		return (bool)preg_match(
-			'/invalid authentication|authentication_error|please run\s*\/?login|oauth token|api key|not authenticated|unauthorized/i',
+			// "Failed to authenticate: OAuth session expired and could not be refreshed" (2026-11-07) went
+			// through as an answer: the sign-in had run out and nothing said what to do.
+			'/invalid authentication|authentication_error|please run\s*\/?login|oauth token|api key|not authenticated|unauthorized|failed to authenticate|oauth session expired|could not be refreshed|not logged in|log ?in again/i',
 			$text,
 		);
 	}

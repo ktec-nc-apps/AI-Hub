@@ -12,7 +12,13 @@ return [
 		// the administrator's model list and connection test
 		['name' => 'tool#models', 'url' => '/tools/models', 'verb' => 'GET'],
 		['name' => 'tool#test', 'url' => '/tools/test', 'verb' => 'POST'],
+		['name' => 'tool#cliLoginStatus', 'url' => '/tools/cli-login', 'verb' => 'GET'],
+		['name' => 'tool#cliLoginStart', 'url' => '/tools/cli-login/start', 'verb' => 'POST'],
+		['name' => 'tool#cliLoginFinish', 'url' => '/tools/cli-login/finish', 'verb' => 'POST'],
+		['name' => 'tool#cliLoginCancel', 'url' => '/tools/cli-login/cancel', 'verb' => 'POST'],
 		['name' => 'tool#setModel', 'url' => '/tools/model', 'verb' => 'POST'],
+		['name' => 'tool#defaults', 'url' => '/tools/defaults', 'verb' => 'GET'],
+		['name' => 'tool#setDefaults', 'url' => '/tools/defaults', 'verb' => 'POST'],
 		// the apps that connect, each with its own choice of AI and model
 		['name' => 'tool#apps', 'url' => '/tools/apps', 'verb' => 'GET'],
 		// the apps that declare AI-Hub support (appinfo/ai-hub.json) and are not listed yet

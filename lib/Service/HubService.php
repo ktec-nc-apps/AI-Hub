@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OCA\AIHub\Service;
 
 use OCA\AIHub\AppInfo\Application;
+use OCA\AIHub\Engine\TurnResult;
 use OCA\AIHub\Engine\EngineFactory;
 use OCP\Authentication\Token\IProvider as ITokenProvider;
 use OCP\ICacheFactory;
@@ -66,6 +67,12 @@ class HubService {
 	private const KEEP = 1800;
 	/** How many tool calls one question may make. */
 	private const MAX_TOOLS = 8;
+	/**
+	 * How many times one question may call the model at most: one answer, MAX_TOOLS tool
+	 * results and one retry of the answer's shape. Each call may take the request timeout,
+	 * so a question can run this many times as long (LimitService and put() count with it).
+	 */
+	public const MAX_ROUNDS = self::MAX_TOOLS + 2;
 	/** The most of a conversation handed to the model, in turns. */
 	private const MAX_TURNS = 40;
 	/**
@@ -203,6 +210,33 @@ class HubService {
 			'search' => $search,
 			'images' => $images,
 		];
+	}
+
+	/**
+	 * Let one question through that does not come by ask()/askNow() -- Nextcloud's own Task
+	 * Processing -- on the same terms: the allowlist and the limits on questions a minute and
+	 * at once. The allowed apps do not apply to it. The slots it returns go back with releaseQuestion().
+	 *
+	 * @return array{slots?: list<string>, error?: string} error: user-not-allowed | app-not-allowed | busy
+	 */
+	public function admitQuestion(string $userId, string $app): array {
+		$why = $this->refused($userId, $app);
+		// Nextcloud's own Assistant is not one of the apps named in "allowed apps": a list made
+		// for the apps would otherwise shut it out (owner, 2026-11-06). Who may ask and how often
+		// still hold for it.
+		if ($why === 'app-not-allowed' && $app === 'taskprocessing') {
+			$why = '';
+		}
+		if ($why !== '') {
+			return ['error' => $why];
+		}
+		$slots = $this->limits->take($userId);
+		return $slots === null ? ['error' => 'busy'] : ['slots' => $slots];
+	}
+
+	/** @param list<string> $slots What admitQuestion() handed out. */
+	public function releaseQuestion(array $slots): void {
+		$this->limits->release($slots);
 	}
 
 	/** Why this person, through this app, may not ask -- or '' when they may. */
@@ -397,7 +431,23 @@ class HubService {
 				$turns[] = ['role' => $m['role'], 'text' => mb_substr($text, 0, self::MAX_TEXT)];
 			}
 		}
-		return array_slice($turns, -self::MAX_TURNS);
+		return self::lastTurns($turns);
+	}
+
+	/**
+	 * The last MAX_TURNS turns, beginning with one of the person's: cut at an even place
+	 * of a conversation that alternates and ends with a question, the window would
+	 * otherwise begin with an answer, which the model's API may refuse.
+	 *
+	 * @param list<array{role: string, text: string}> $turns
+	 * @return list<array{role: string, text: string}>
+	 */
+	public static function lastTurns(array $turns): array {
+		$turns = array_slice(array_values($turns), -self::MAX_TURNS);
+		while ($turns !== [] && $turns[0]['role'] !== 'user') {
+			array_shift($turns);
+		}
+		return $turns;
 	}
 
 	/** The mark a remembered turn keeps in place of its images: "[1 image]", "[3 images]". */
@@ -575,7 +625,7 @@ class HubService {
 			if ($last !== null) {
 				$turns[] = $last;
 			}
-			$turns = array_slice($turns, -self::MAX_TURNS);
+			$turns = self::lastTurns($turns);
 		}
 		if ($turns === []) {
 			return ['state' => 'error', 'error' => 'empty'];
@@ -606,9 +656,18 @@ class HubService {
 
 		$used = [];
 		$retriedShape = false;
-		for ($round = 0; $round <= self::MAX_TOOLS + 1; $round += 1) {
+		for ($round = 0; $round < self::MAX_ROUNDS; $round += 1) {
 			$result = $engine->run($turns, $message, $system, false, $engineOptions);
 			if (!$result->isOk()) {
+				if ($result->kind === TurnResult::KIND_AUTH_ERROR) {
+					// what went wrong is for the log; the person asking is told who can put it right
+					$this->logger->warning('AI-Hub: the AI service refused the sign-in: ' . mb_substr($result->detail, 0, 300));
+					// in the asker's language: this can run in the background, with no request to take it from
+					$factory = \OCP\Server::get(\OCP\L10N\IFactory::class);
+					$lang = $this->serverConfig->getUserValue($userId, 'core', 'lang', '') ?: $factory->findLanguage(Application::APP_ID);
+					$l = $factory->get(Application::APP_ID, $lang);
+					return ['state' => 'error', 'error' => $l->t('The AI service is not signed in, so it cannot answer. Ask an administrator to sign in again in Administration settings → AI-Hub.')];
+				}
 				return ['state' => 'error', 'error' => $result->detail !== '' ? $result->detail : 'The model gave no answer.'];
 			}
 			$reply = $result->output;
@@ -813,18 +872,33 @@ class HubService {
 		return sys_get_temp_dir() . '/ai_hub_' . preg_replace('/[^A-Za-z0-9]/', '', $id) . '.json';
 	}
 
+	/**
+	 * How long a question still being answered is kept: as long as it can run (every round
+	 * may take the whole request timeout), and KEEP after that for its answer to be fetched.
+	 * Kept only KEEP, a question with many tool calls was lost while still running.
+	 */
+	private function runningKeep(): int {
+		return self::MAX_ROUNDS * ($this->config->getRequestTimeout() + 15) + self::KEEP;
+	}
+
 	/** @param array<string, mixed> $job */
 	private function put(string $id, array $job): void {
 		$job['at'] = time();
+		$keep = ($job['state'] ?? '') === 'running' ? $this->runningKeep() : self::KEEP;
 		$cache = $this->store();
 		if ($cache !== null) {
-			$cache->set($id, json_encode($job, JSON_UNESCAPED_UNICODE), self::KEEP);
+			$cache->set($id, json_encode($job, JSON_UNESCAPED_UNICODE), $keep);
 			return;
 		}
 		@file_put_contents($this->file($id), json_encode($job, JSON_UNESCAPED_UNICODE), LOCK_EX);
 		@chmod($this->file($id), 0600);
+		// a file of a question still running may be as old as runningKeep()
+		$sweep = max($this->runningKeep(), self::KEEP);
 		foreach (glob(sys_get_temp_dir() . '/ai_hub_*.json') ?: [] as $old) {
-			if (@filemtime($old) < time() - self::KEEP) {
+			if (str_starts_with(basename($old), 'ai_hub_conv_')) {
+				continue;
+			}
+			if (@filemtime($old) < time() - $sweep) {
 				@unlink($old);
 			}
 		}
@@ -998,6 +1072,18 @@ class HubService {
 			return ['error' => $why];
 		}
 		$cid = $this->cleanConvId($conversationId);
+		$stored = $cid === '' ? null : $this->loadConversation($userId, $this->login($userId), $app, $cid);
+		if ($stored !== null) {
+			// The app's own rule on who may ask holds for summing up too: it runs on the app's
+			// AI connection. A scenario no longer registered (the app disabled) is not asked.
+			$spec = $this->scenarios[$app][$stored['scenario']] ?? null;
+			if ($spec === null) {
+				return ['error' => 'no-scenario'];
+			}
+			if ($spec['allow'] !== null && !($spec['allow'])($userId)) {
+				return ['error' => 'user-not-allowed'];
+			}
+		}
 		$turns = $cid === '' ? [] : $this->readableTurns($userId, $app, $cid);
 		if ($turns === []) {
 			return ['error' => 'empty'];
@@ -1069,7 +1155,7 @@ class HubService {
 				$turns[] = ['role' => $m['role'], 'text' => $m['text']];
 			}
 		}
-		return ['turns' => array_slice($turns, -self::MAX_TURNS), 'scenario' => is_string($raw['scenario'] ?? null) ? $raw['scenario'] : ''];
+		return ['turns' => self::lastTurns($turns), 'scenario' => is_string($raw['scenario'] ?? null) ? $raw['scenario'] : ''];
 	}
 
 	/**
@@ -1084,7 +1170,7 @@ class HubService {
 		}
 		$turns[] = ['role' => 'user', 'text' => $userMessage];
 		$turns[] = ['role' => 'assistant', 'text' => $assistantText];
-		$rec = ['turns' => array_slice($turns, -self::MAX_TURNS), 'scenario' => $scenario];
+		$rec = ['turns' => self::lastTurns($turns), 'scenario' => $scenario];
 		$this->convPut($this->convKey($userId, $login, $app, $cid), $rec);
 	}
 

@@ -38,6 +38,30 @@
 		<?php p($l->t('Save the settings above, then load the models your key can use, choose one, and test that it answers. The model is set here and nowhere else.')); ?>
 	</p>
 
+	<div id="tb-defaults" class="tb-defaults">
+		<h3><?php p($l->t('Default model and effort')); ?></h3>
+		<p class="settings-hint"><?php p($l->t('The model every app uses unless it has its own, whatever the command line tool is set to. Pick one from the list, or choose Other to type a model name.')); ?></p>
+		<div class="tb-model-row">
+			<label for="tb-def-model"><?php p($l->t('Default model')); ?></label>
+			<select id="tb-def-model"></select>
+			<input id="tb-def-custom" type="text" autocomplete="off" spellcheck="false" hidden placeholder="claude-…">
+		</div>
+		<div class="tb-model-row">
+			<label for="tb-def-effort"><?php p($l->t('Effort')); ?></label>
+			<select id="tb-def-effort">
+				<option value=""><?php p($l->t('Model default (not set)')); ?></option>
+				<option value="low"><?php p($l->t('Low')); ?> (low)</option>
+				<option value="medium"><?php p($l->t('Medium')); ?> (medium)</option>
+				<option value="high"><?php p($l->t('High')); ?> (high)</option>
+				<option value="xhigh"><?php p($l->t('Extra high')); ?> (xhigh)</option>
+				<option value="max"><?php p($l->t('Maximum')); ?> (max)</option>
+			</select>
+			<button id="tb-def-save" class="button primary" type="button"><?php p($l->t('Save')); ?></button>
+		</div>
+		<p class="settings-hint"><?php p($l->t('Effort is how hard Claude thinks before answering: higher is more careful but slower and uses more of the plan or the bill. It is used for Claude (the API and the command line tool); Gemini and OpenAI-compatible services ignore it. Older models may not take every level.')); ?></p>
+		<div id="tb-def-result" role="status" aria-live="polite"></div>
+	</div>
+
 	<div class="tb-actions">
 		<button id="tb-fetch" class="button primary" type="button"><?php p($l->t('Load models')); ?></button>
 		<button id="tb-test" class="button" type="button"><?php p($l->t('Test connection')); ?></button>
@@ -45,6 +69,26 @@
 	</div>
 
 	<div id="tb-result" role="status" aria-live="polite"></div>
+
+	<div id="tb-login" class="tb-hidden">
+		<h3><?php p($l->t('Sign-in of the Claude command line tool')); ?></h3>
+		<p id="tb-login-status" class="tb-login-status"></p>
+		<div class="tb-actions">
+			<button id="tb-login-start" class="button primary" type="button"><?php p($l->t('Sign in again')); ?></button>
+		</div>
+		<div id="tb-login-steps" class="tb-login-steps tb-hidden">
+			<ol>
+				<li><?php p($l->t('Open this link and sign in to Claude with the account AI-Hub should use (a new tab opens):')); ?><br><a id="tb-login-url" href="#" target="_blank" rel="noopener noreferrer"><?php p($l->t('Open the Claude sign-in page')); ?></a></li>
+				<li><?php p($l->t('After signing in, the page shows a code. Copy all of it, paste it below and press “Send code”.')); ?></li>
+			</ol>
+			<div class="tb-model-row">
+				<label class="tb-visually-hidden" for="tb-login-code"><?php p($l->t('Code')); ?></label>
+				<input id="tb-login-code" type="text" autocomplete="off" spellcheck="false" placeholder="<?php p($l->t('Paste the code here')); ?>">
+				<button id="tb-login-send" class="button primary" type="button"><?php p($l->t('Send code')); ?></button>
+				<button id="tb-login-cancel" class="button" type="button"><?php p($l->t('Cancel')); ?></button>
+			</div>
+		</div>
+	</div>
 
 	<div id="tb-models-wrap" class="tb-hidden">
 		<h3><?php p($l->t('Model')); ?> <small id="tb-current"></small></h3>

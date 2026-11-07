@@ -127,6 +127,14 @@
 		request('GET', '/tools/models').then(function (data) {
 			renderModels(data);
 			renderEngines(data.engines);
+			if (el('tb-def-model') && (data.models || []).length) {
+				var sel = el('tb-def-model');
+				var keep = sel.value === '__other' ? el('tb-def-custom').value.trim() : sel.value;
+				defKnown = (data.models || []).concat(defKnown.filter(function (m) {
+					return data.models.indexOf(m) < 0;
+				}));
+				setDefModel(keep || (data.current && data.current.model) || '');
+			}
 			if (data.note) {
 				say(data.note, true);
 			} else {
@@ -147,6 +155,7 @@
 		busy(true);
 		request('POST', '/tools/model', { model: select.value }).then(function (data) {
 			say(t('Model set to {model}.').replace('{model}', data.model), true);
+			if (el('tb-def-model')) { setDefModel(data.model); }
 			var current = el('tb-current');
 			if (current) {
 				current.textContent = current.textContent.replace(/—.*$/, '— ' + data.model);
@@ -159,6 +168,146 @@
 		});
 	}
 
+	// ---- the default model and effort (owner, 2026-11-07) ----
+
+	function defSay(text, ok) {
+		var box = el('tb-def-result');
+		if (box) {
+			box.textContent = text;
+			box.className = ok ? 'tb-ok' : 'tb-err';
+		}
+	}
+
+	var defKnown = [];
+
+	function setDefModel(model) {
+		var sel = el('tb-def-model');
+		var custom = el('tb-def-custom');
+		var names = defKnown.slice();
+		if (model && names.indexOf(model) < 0) {
+			names.unshift(model);
+		}
+		sel.innerHTML = '';
+		names.forEach(function (m) {
+			var o = document.createElement('option');
+			o.value = m;
+			o.textContent = m;
+			sel.appendChild(o);
+		});
+		var other = document.createElement('option');
+		other.value = '__other';
+		other.textContent = t('Other (type a name)');
+		sel.appendChild(other);
+		sel.value = model || (names[0] || '__other');
+		custom.hidden = sel.value !== '__other';
+	}
+
+	function loadDefaults() {
+		return request('GET', '/tools/defaults').then(function (d) {
+			defKnown = d.known || [];
+			setDefModel(d.model || '');
+			el('tb-def-effort').value = d.effort || '';
+		}).catch(function () { /* the field stays empty */ });
+	}
+
+	function saveDefaults() {
+		var sel = el('tb-def-model');
+		var model = sel.value === '__other' ? el('tb-def-custom').value.trim() : sel.value;
+		if (!model) {
+			defSay(t('Enter a model name.'), false);
+			return;
+		}
+		var save = el('tb-def-save');
+		save.disabled = true;
+		request('POST', '/tools/defaults', { model: model, effort: el('tb-def-effort').value }).then(function (d) {
+			defSay(t('Saved: {model}, effort {effort}.').replace('{model}', d.model).replace('{effort}', d.effort || t('model default')), true);
+			setDefModel(d.model);
+			var current = el('tb-current');
+			if (current) {
+				current.textContent = current.textContent.replace(/—.*$/, '— ' + d.model);
+			}
+			loadApps();
+		}).catch(function (error) {
+			defSay(error.message, false);
+		}).then(function () {
+			save.disabled = false;
+		});
+	}
+
+	// ---- signing the Claude command line tool in again (owner, 2026-11-07) ----
+
+	function loginSay(text, ok) {
+		var box = el('tb-login-status');
+		if (box) {
+			box.textContent = text;
+			box.className = 'tb-login-status ' + (ok ? 'tb-ok' : 'tb-err');
+		}
+	}
+
+	function showLoginStatus(s) {
+		if (!s || !s.available) {
+			return;
+		}
+		el('tb-login').classList.remove('tb-hidden');
+		if (s.loggedIn) {
+			loginSay(t('Signed in') + (s.email ? ' (' + s.email + ')' : '') + '.', true);
+		} else {
+			loginSay(t('Not signed in. The AI cannot answer until you sign in again.'), false);
+		}
+	}
+
+	function loadLoginStatus() {
+		return request('GET', '/tools/cli-login').then(showLoginStatus).catch(function () { /* the block stays hidden */ });
+	}
+
+	function loginStart() {
+		var start = el('tb-login-start');
+		start.disabled = true;
+		loginSay(t('Starting the sign-in…'), true);
+		request('POST', '/tools/cli-login/start', {}).then(function (data) {
+			el('tb-login-url').href = data.url;
+			el('tb-login-steps').classList.remove('tb-hidden');
+			el('tb-login-code').value = '';
+			loginSay(t('Follow the two steps below.'), true);
+			el('tb-login-code').focus();
+		}).catch(function (error) {
+			loginSay(t('The sign-in could not be started: {detail}').replace('{detail}', error.message), false);
+		}).then(function () {
+			start.disabled = false;
+		});
+	}
+
+	function loginSend() {
+		var code = el('tb-login-code').value.trim();
+		if (!code) {
+			loginSay(t('Paste the code from the sign-in page first.'), false);
+			return;
+		}
+		var send = el('tb-login-send');
+		send.disabled = true;
+		loginSay(t('Checking the code…'), true);
+		request('POST', '/tools/cli-login/finish', { code: code }).then(function (data) {
+			if (data.ok) {
+				el('tb-login-steps').classList.add('tb-hidden');
+				showLoginStatus(Object.assign({ available: true }, data.status));
+				say(t('Signed in again. Press “Test connection” to check that the AI answers.'), true);
+			} else {
+				loginSay(t('The sign-in did not go through: {detail}').replace('{detail}', data.detail || t('the code was not accepted')), false);
+			}
+		}).catch(function (error) {
+			loginSay(error.message, false);
+		}).then(function () {
+			send.disabled = false;
+		});
+	}
+
+	function loginCancel() {
+		request('POST', '/tools/cli-login/cancel', {}).catch(function () {}).then(function () {
+			el('tb-login-steps').classList.add('tb-hidden');
+			loadLoginStatus();
+		});
+	}
+
 	function testConnection() {
 		busy(true);
 		say(t('Contacting the AI service…'), true);
@@ -168,6 +317,17 @@
 					.replace('{engine}', data.engine)
 					.replace('{model}', data.model)
 					.replace('{reply}', data.reply), true);
+			} else if (data.auth) {
+				// the sign-in ran out: say so plainly and point at the way to sign in again
+				say(data.cliLogin
+					? t('The AI service is not signed in. Use “Sign in again” below to sign the command line tool in.')
+					: t('The AI service did not accept the sign-in or the API key. Check the key or the sign-in in the settings above.'), false);
+				if (data.cliLogin) {
+					loadLoginStatus().then(function () {
+						var box = el('tb-login');
+						if (box) { box.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+					});
+				}
 			} else {
 				say(t('No answer: {detail}').replace('{detail}', data.detail || ''), false);
 			}
@@ -539,5 +699,26 @@
 		}
 		loadApps();
 		loadCompatible();
+		if (el('tb-defaults')) {
+			el('tb-def-save').addEventListener('click', saveDefaults);
+			el('tb-def-model').addEventListener('change', function () {
+				var custom = el('tb-def-custom');
+				custom.hidden = this.value !== '__other';
+				if (!custom.hidden) { custom.focus(); }
+			});
+			loadDefaults();
+		}
+		if (el('tb-login')) {
+			el('tb-login-start').addEventListener('click', loginStart);
+			el('tb-login-send').addEventListener('click', loginSend);
+			el('tb-login-cancel').addEventListener('click', loginCancel);
+			el('tb-login-code').addEventListener('keydown', function (event) {
+				if (event.key === 'Enter') {
+					event.preventDefault();
+					loginSend();
+				}
+			});
+			loadLoginStatus();
+		}
 	});
 })();

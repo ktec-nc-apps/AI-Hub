@@ -250,3 +250,30 @@
 #aihub-tools #tb-apps tr.tb-app-prompt-row td {
 	border-bottom: 1px solid var(--color-border, #ddd);
 }
+
+/* Signing the Claude command line tool in again (owner, 2026-11-07) */
+#aihub-tools .tb-login-status {
+	margin: 6px 0 10px;
+	padding: 8px 12px;
+	border-radius: var(--border-radius, 6px);
+	border-inline-start: 4px solid var(--color-border-dark, #999);
+	background-color: var(--color-background-hover);
+	max-width: 700px;
+}
+#aihub-tools .tb-login-status.tb-ok { border-inline-start-color: var(--color-success, #46ba61); }
+#aihub-tools .tb-login-status.tb-err { border-inline-start-color: var(--color-error, #e9322d); }
+#aihub-tools .tb-login-steps { max-width: 700px; margin-top: 10px; }
+#aihub-tools .tb-login-steps ol { margin: 0 0 10px 1.4em; list-style: decimal; }
+#aihub-tools .tb-login-steps li { margin-bottom: 8px; }
+#aihub-tools .tb-login-steps a { color: var(--color-primary-element, #0082c9); text-decoration: underline; word-break: break-all; }
+#aihub-tools #tb-login-code { flex: 1 1 260px; min-width: 0; }
+
+/* The default model and effort (owner, 2026-11-07) */
+#aihub-tools .tb-defaults { margin: 6px 0 18px; max-width: 700px; }
+#aihub-tools .tb-defaults .tb-model-row { align-items: center; margin-bottom: 8px; }
+#aihub-tools .tb-defaults label { min-width: 9em; font-weight: 600; }
+#aihub-tools #tb-def-model, #aihub-tools #tb-def-custom { flex: 1 1 260px; min-width: 0; }
+#aihub-tools #tb-def-result:empty { display: none; }
+#aihub-tools #tb-def-result { margin-top: 6px; padding: 6px 10px; border-inline-start: 4px solid var(--color-border-dark, #999); background-color: var(--color-background-hover); }
+#aihub-tools #tb-def-result.tb-ok { border-inline-start-color: var(--color-success, #46ba61); }
+#aihub-tools #tb-def-result.tb-err { border-inline-start-color: var(--color-error, #e9322d); }

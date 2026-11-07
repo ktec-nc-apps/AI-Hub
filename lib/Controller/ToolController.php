@@ -12,6 +12,7 @@ namespace OCA\AIHub\Controller;
 use OCA\AIHub\AppInfo\Application;
 use OCA\AIHub\Engine\CliEngine;
 use OCA\AIHub\Engine\EngineFactory;
+use OCA\AIHub\Service\CliLoginService;
 use OCA\AIHub\Service\ConfigService;
 use OCA\AIHub\Service\HubService;
 use OCA\AIHub\Service\MarkerService;
@@ -45,6 +46,7 @@ class ToolController extends Controller {
 		private MarkerService $markers,
 		private IAppManager $appManager,
 		private IL10N $l,
+		private CliLoginService $cliLogin,
 	) {
 		parent::__construct($appName, $request);
 	}
@@ -102,13 +104,80 @@ class ToolController extends Controller {
 			return new JSONResponse(['ok' => false, 'detail' => Redact::text($e->getMessage(), Redact::keysOf($this->config))]);
 		}
 
+		$auth = $result->kind === \OCA\AIHub\Engine\TurnResult::KIND_AUTH_ERROR;
 		return new JSONResponse([
 			'ok' => $result->isOk(),
+			// the sign-in ran out (or never was): the page offers to sign in again
+			'auth' => $auth,
+			'cliLogin' => $auth && $provider === 'claude' && $mode === 'cli' && $this->cliLogin->available(),
 			'engine' => $provider . ' / ' . $mode,
 			'model' => $model,
 			'reply' => mb_substr($result->output, 0, 200),
 			'detail' => mb_substr(Redact::text($result->detail, Redact::keysOf($this->config)), 0, 500),
 		]);
+	}
+
+	// ---- the default model and effort, typed in the settings (owner, 2026-11-07) ----
+
+	/** The server-wide model and effort, with model names to offer (no engine is asked). */
+	#[AuthorizedAdminSetting(settings: AdminTools::class)]
+	public function defaults(): JSONResponse {
+		$provider = $this->config->getProvider();
+		$known = $provider === 'claude' ? \OCA\AIHub\Engine\ClaudeApiEngine::KNOWN_MODELS : [];
+		$cache = json_decode($this->config->getString('cli_models_cache', ''), true);
+		if (is_array($cache['models'] ?? null)) {
+			$known = array_values(array_unique(array_merge($cache['models'], $known)));
+		}
+		return new JSONResponse([
+			'provider' => $provider,
+			'model' => $this->config->getModel(),
+			'effort' => $this->config->getEffort(),
+			'efforts' => ConfigService::EFFORTS,
+			'known' => $known,
+		]);
+	}
+
+	#[AuthorizedAdminSetting(settings: AdminTools::class)]
+	public function setDefaults(string $model = '', string $effort = ''): JSONResponse {
+		$model = trim($model);
+		if ($model === '' || mb_strlen($model) > 200 || !preg_match('/^[A-Za-z0-9._:\/@\-\[\]]+$/', $model)) {
+			return new JSONResponse(['ok' => false, 'detail' => $this->l->t('That is not a valid model name.')], Http::STATUS_BAD_REQUEST);
+		}
+		if ($effort !== '' && !in_array($effort, ConfigService::EFFORTS, true)) {
+			return new JSONResponse(['ok' => false, 'detail' => $this->l->t('That is not a valid effort.')], Http::STATUS_BAD_REQUEST);
+		}
+		$this->config->setModel($model);
+		$this->config->setEffort($effort);
+		return new JSONResponse(['ok' => true, 'model' => $this->config->getModel(), 'effort' => $this->config->getEffort()]);
+	}
+
+	// ---- signing the Claude command line tool in again (owner, 2026-11-07) ----
+
+	#[AuthorizedAdminSetting(settings: AdminTools::class)]
+	public function cliLoginStatus(): JSONResponse {
+		return new JSONResponse(['available' => $this->cliLogin->available()] + $this->cliLogin->status());
+	}
+
+	#[AuthorizedAdminSetting(settings: AdminTools::class)]
+	public function cliLoginStart(): JSONResponse {
+		$r = $this->cliLogin->start();
+		return new JSONResponse($r, $r['ok'] ? Http::STATUS_OK : Http::STATUS_BAD_GATEWAY);
+	}
+
+	#[AuthorizedAdminSetting(settings: AdminTools::class)]
+	public function cliLoginFinish(string $code = ''): JSONResponse {
+		$r = $this->cliLogin->finish($code);
+		$msg = [
+			'bad code' => $this->l->t('That does not look like the code from the sign-in page. Copy the whole code and paste it again.'),
+			'expired' => $this->l->t('The sign-in waited too long and was ended. Press “Sign in again” to start over.'),
+		][$r['detail']] ?? $r['detail'];
+		return new JSONResponse(['ok' => $r['ok'], 'detail' => $msg, 'status' => $r['status']]);
+	}
+
+	#[AuthorizedAdminSetting(settings: AdminTools::class)]
+	public function cliLoginCancel(): JSONResponse {
+		$this->cliLogin->cancel();
+		return new JSONResponse(['ok' => true]);
 	}
 
 	/** Store the model chosen in the dropdown: server-wide, or for one app. */

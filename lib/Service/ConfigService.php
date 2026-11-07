@@ -185,6 +185,19 @@ class ConfigService {
 		}
 	}
 
+	/** Effort levels Claude takes (owner, 2026-11-07); '' leaves it to the model's own default. */
+	public const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'];
+
+	/** The effort for Claude's answers, set in the admin settings: '' = the model's default. */
+	public function getEffort(): string {
+		$e = $this->getString('claude_effort');
+		return in_array($e, self::EFFORTS, true) ? $e : '';
+	}
+
+	public function setEffort(string $effort): void {
+		$this->setString('claude_effort', in_array($effort, self::EFFORTS, true) ? $effort : '');
+	}
+
 	public function getOpenAiBaseUrl(): string {
 		return rtrim($this->getString('openai_base_url', 'https://openrouter.ai/api/v1'), '/');
 	}
