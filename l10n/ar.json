@@ -148,7 +148,19 @@
             "[%n صورة]"
         ],
         "The model every app uses unless it has its own, whatever the command line tool is set to. Pick one from the list, or choose Other to type a model name.": "النموذج الذي يستخدمه كل تطبيق ليس له نموذج خاص، أيًا كان إعداد أداة سطر الأوامر. اختر نموذجًا من القائمة، أو اختر «غير ذلك» لكتابة اسم نموذج.",
-        "Other (type a name)": "غير ذلك (اكتب الاسم)"
+        "Other (type a name)": "غير ذلك (اكتب الاسم)",
+        "Additional prompt for every app": "موجّه إضافي لكل التطبيقات",
+        "Instructions added to every question from every app, before each app's own additional prompt (an app's own wins where the two differ). For example, rules every answer must keep.": "تعليمات تُضاف إلى كل سؤال من كل تطبيق، قبل الموجّه الإضافي الخاص بالتطبيق (وعند الاختلاف يُقدَّم موجّه التطبيق). مثلًا: قواعد يجب أن تلتزم بها كل إجابة.",
+        "{n} / {max} characters": "{n} / {max} حرفًا",
+        "Saved. It is added to every question from now on.": "تم الحفظ. سيُضاف إلى كل سؤال من الآن.",
+        "Removed.": "تمت الإزالة.",
+        "What the AI may do in this app": "ما يمكن للذكاء الاصطناعي فعله في هذا التطبيق",
+        "Read data in the app": "قراءة البيانات في التطبيق",
+        "Search the internet": "البحث في الإنترنت",
+        "Change": "التعديل",
+        "Delete": "الحذف",
+        "Administrators' operations on servers and devices": "عمليات المسؤول على الخوادم والأجهزة",
+        "Whatever the app's own settings allow, what is unticked here is not done. The app's own settings still apply too.": "ما لم يُحدَّد هنا لا يُنفَّذ، مهما سمحت إعدادات التطبيق. وتبقى إعدادات التطبيق سارية أيضًا."
     },
     "pluralForm": "nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);"
 }

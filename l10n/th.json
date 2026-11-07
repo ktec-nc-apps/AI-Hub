@@ -143,7 +143,19 @@
             "[%n ภาพ]"
         ],
         "The model every app uses unless it has its own, whatever the command line tool is set to. Pick one from the list, or choose Other to type a model name.": "โมเดลที่ทุกแอปใช้เมื่อไม่ได้กำหนดโมเดลของตนเอง ไม่ขึ้นกับการตั้งค่าของเครื่องมือบรรทัดคำสั่ง เลือกจากรายการ หรือเลือก \"อื่น ๆ\" เพื่อพิมพ์ชื่อโมเดล",
-        "Other (type a name)": "อื่น ๆ (พิมพ์ชื่อ)"
+        "Other (type a name)": "อื่น ๆ (พิมพ์ชื่อ)",
+        "Additional prompt for every app": "พรอมต์เพิ่มเติมสำหรับทุกแอป",
+        "Instructions added to every question from every app, before each app's own additional prompt (an app's own wins where the two differ). For example, rules every answer must keep.": "คำสั่งที่เพิ่มในทุกคำถามจากทุกแอป โดยอยู่ก่อนพรอมต์เพิ่มเติมของแต่ละแอป (ถ้าขัดกัน จะใช้ของแอป) เช่น กฎที่ทุกคำตอบต้องปฏิบัติตาม",
+        "{n} / {max} characters": "{n} / {max} ตัวอักษร",
+        "Saved. It is added to every question from now on.": "บันทึกแล้ว จากนี้จะเพิ่มในทุกคำถาม",
+        "Removed.": "ลบแล้ว",
+        "What the AI may do in this app": "สิ่งที่ AI ทำได้ในแอปนี้",
+        "Read data in the app": "อ่านข้อมูลในแอป",
+        "Search the internet": "ค้นหาในอินเทอร์เน็ต",
+        "Change": "แก้ไข",
+        "Delete": "ลบ",
+        "Administrators' operations on servers and devices": "การดำเนินการของผู้ดูแลบนเซิร์ฟเวอร์และอุปกรณ์",
+        "Whatever the app's own settings allow, what is unticked here is not done. The app's own settings still apply too.": "สิ่งที่ไม่ได้ติ๊กไว้ตรงนี้จะไม่ทำ ไม่ว่าการตั้งค่าของแอปจะอนุญาตอย่างไร การตั้งค่าของแอปก็ยังมีผลเช่นเดิม"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

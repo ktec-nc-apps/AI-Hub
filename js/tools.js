@@ -205,9 +205,42 @@
 	function loadDefaults() {
 		return request('GET', '/tools/defaults').then(function (d) {
 			defKnown = d.known || [];
+			var cp = el('tb-common-prompt');
+			if (cp) {
+				cp.value = d.prompt || '';
+				cp.maxLength = d.promptMax || 8000;
+				commonCount();
+			}
 			setDefModel(d.model || '');
 			el('tb-def-effort').value = d.effort || '';
 		}).catch(function () { /* the field stays empty */ });
+	}
+
+	// ---- the additional prompt for every app (owner, 2026-11-07) ----
+
+	function commonCount() {
+		var cp = el('tb-common-prompt');
+		var out = el('tb-common-count');
+		if (cp && out) {
+			out.textContent = t('{n} / {max} characters').replace('{n}', cp.value.length).replace('{max}', cp.maxLength > 0 ? cp.maxLength : 8000);
+		}
+	}
+
+	function saveCommon() {
+		var save = el('tb-common-save');
+		var box = el('tb-common-result');
+		save.disabled = true;
+		request('POST', '/tools/common-prompt', { prompt: el('tb-common-prompt').value }).then(function (d) {
+			el('tb-common-prompt').value = d.prompt || '';
+			commonCount();
+			box.textContent = d.prompt ? t('Saved. It is added to every question from now on.') : t('Removed.');
+			box.className = 'tb-ok';
+		}).catch(function (error) {
+			box.textContent = error.message;
+			box.className = 'tb-err';
+		}).then(function () {
+			save.disabled = false;
+		});
 	}
 
 	function saveDefaults() {
@@ -515,6 +548,29 @@
 		};
 		label();
 		promptArea.addEventListener('input', label);
+		// What the assistant may do in this app (owner, 2026-11-07), saved with the row's Save button.
+		var perms = document.createElement('fieldset');
+		perms.className = 'tb-app-perms';
+		var legend = document.createElement('legend');
+		legend.textContent = t('What the AI may do in this app');
+		perms.appendChild(legend);
+		var permBoxes = {};
+		[['read', t('Read data in the app')], ['search', t('Search the internet')], ['create', t('Add')],
+			['update', t('Change')], ['delete', t('Delete')], ['admin', t('Administrators\' operations on servers and devices')]].forEach(function (p) {
+			var lab = document.createElement('label');
+			var box = document.createElement('input');
+			box.type = 'checkbox';
+			box.checked = !!(app.perms && app.perms[p[0]]);
+			permBoxes[p[0]] = box;
+			lab.appendChild(box);
+			lab.appendChild(document.createTextNode(' ' + p[1]));
+			perms.appendChild(lab);
+		});
+		var permHint = document.createElement('p');
+		permHint.className = 'settings-hint';
+		permHint.textContent = t('Whatever the app\'s own settings allow, what is unticked here is not done. The app\'s own settings still apply too.');
+		perms.appendChild(permHint);
+		tdPrompt.appendChild(perms);
 		details.appendChild(summary);
 		details.appendChild(promptArea);
 		details.appendChild(count);
@@ -526,7 +582,7 @@
 		if (!app.installed && app.fixed) {
 			tr.classList.add('tb-off');
 			promptRow.classList.add('tb-off');
-			[provider, mode, model, modelsButton, save, test, promptArea].forEach(function (c) { c.disabled = true; });
+			[provider, mode, model, modelsButton, save, test, promptArea].concat(Object.keys(permBoxes).map(function (k) { return permBoxes[k]; })).forEach(function (c) { c.disabled = true; });
 			return tr;
 		}
 
@@ -548,7 +604,8 @@
 		save.addEventListener('click', function () {
 			save.disabled = true;
 			request('POST', '/tools/app', {
-				app: app.id, provider: provider.value, mode: mode.value, model: model.value, prompt: promptArea.value
+				app: app.id, provider: provider.value, mode: mode.value, model: model.value, prompt: promptArea.value,
+				perms: Object.keys(permBoxes).reduce(function (o, k) { o[k] = permBoxes[k].checked; return o; }, {})
 			}).then(function (data) {
 				if (data.app) {
 					tdGets.textContent = gets(data.app);
@@ -701,6 +758,10 @@
 		loadCompatible();
 		if (el('tb-defaults')) {
 			el('tb-def-save').addEventListener('click', saveDefaults);
+			if (el('tb-common-save')) {
+				el('tb-common-save').addEventListener('click', saveCommon);
+				el('tb-common-prompt').addEventListener('input', commonCount);
+			}
 			el('tb-def-model').addEventListener('change', function () {
 				var custom = el('tb-def-custom');
 				custom.hidden = this.value !== '__other';

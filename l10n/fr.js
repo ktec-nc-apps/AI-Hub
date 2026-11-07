@@ -145,6 +145,18 @@ OC.L10N.register(
         "[%n images]"
     ],
     "The model every app uses unless it has its own, whatever the command line tool is set to. Pick one from the list, or choose Other to type a model name.": "Le modèle utilisé par chaque application qui n'a pas le sien, quel que soit le réglage de l'outil en ligne de commande. Choisissez-en un dans la liste, ou choisissez Autre pour saisir un nom de modèle.",
-    "Other (type a name)": "Autre (saisir le nom)"
+    "Other (type a name)": "Autre (saisir le nom)",
+    "Additional prompt for every app": "Prompt supplémentaire pour toutes les applications",
+    "Instructions added to every question from every app, before each app's own additional prompt (an app's own wins where the two differ). For example, rules every answer must keep.": "Instructions ajoutées à chaque question de chaque application, avant le prompt supplémentaire propre à l'application (celui de l'application l'emporte en cas de différence). Par exemple, des règles que toute réponse doit respecter.",
+    "{n} / {max} characters": "{n} / {max} caractères",
+    "Saved. It is added to every question from now on.": "Enregistré. Il est ajouté à chaque question à partir de maintenant.",
+    "Removed.": "Supprimé.",
+    "What the AI may do in this app": "Ce que l'IA peut faire dans cette application",
+    "Read data in the app": "Lire les données de l'application",
+    "Search the internet": "Chercher sur Internet",
+    "Change": "Modifier",
+    "Delete": "Supprimer",
+    "Administrators' operations on servers and devices": "Opérations d'administration sur les serveurs et les appareils",
+    "Whatever the app's own settings allow, what is unticked here is not done. The app's own settings still apply too.": "Ce qui n'est pas coché ici n'est pas fait, quels que soient les réglages de l'application. Les réglages de l'application s'appliquent toujours."
 },
 "nplurals=2; plural=(n > 1);");

@@ -156,10 +156,14 @@ class CliEngine implements IEngine {
 				// An empty list really does disable every tool: the model then has
 				// no way to touch the server, whatever the message asks for.
 				'--tools', $tools,
+				// Nothing of the tool's own: no CLAUDE.md, skills, plugins, hooks or slash
+				// commands from its home (2026-11-07).
+				'--safe-mode',
+				'--disable-slash-commands',
+				// Our instructions take the place of the tool's own, which make it a coding
+				// assistant; appended, that persona stayed underneath (2026-11-07).
+				'--system-prompt', $systemPrompt !== '' ? $systemPrompt : 'You are a helpful assistant.',
 			];
-			if ($systemPrompt !== '') {
-				array_push($argv, '--append-system-prompt', $systemPrompt);
-			}
 			if (array_key_exists('search', $options)) {
 				// No MCP servers either. The account the tool is signed in with can bring
 				// connectors of its own -- Gmail, Calendar, Drive and Docs were offered to

@@ -144,6 +144,18 @@ OC.L10N.register(
         "[이미지 %n장]"
     ],
     "The model every app uses unless it has its own, whatever the command line tool is set to. Pick one from the list, or choose Other to type a model name.": "앱별 모델을 따로 정하지 않은 모든 앱이 쓰는 모델입니다. 명령줄 도구의 설정과 관계없습니다. 목록에서 고르세요. 목록에 없는 모델은 「기타」를 골라 이름을 입력합니다.",
-    "Other (type a name)": "기타 (이름 입력)"
+    "Other (type a name)": "기타 (이름 입력)",
+    "Additional prompt for every app": "모든 앱 공통 추가 프롬프트",
+    "Instructions added to every question from every app, before each app's own additional prompt (an app's own wins where the two differ). For example, rules every answer must keep.": "모든 앱의 모든 질문에 더하는 지시입니다. 앱별 추가 프롬프트보다 앞에 들어갑니다(서로 다를 때는 앱별 프롬프트가 우선합니다). 예를 들어 모든 답변이 지켜야 할 규칙을 씁니다.",
+    "{n} / {max} characters": "{n} / {max}자",
+    "Saved. It is added to every question from now on.": "저장했습니다. 이제부터 모든 질문에 더해집니다.",
+    "Removed.": "삭제했습니다.",
+    "What the AI may do in this app": "이 앱에서 AI가 할 수 있는 일",
+    "Read data in the app": "앱 안의 데이터 읽기",
+    "Search the internet": "인터넷 검색",
+    "Change": "수정",
+    "Delete": "삭제",
+    "Administrators' operations on servers and devices": "관리자용 작업(서버나 기기에 작용)",
+    "Whatever the app's own settings allow, what is unticked here is not done. The app's own settings still apply too.": "여기서 체크를 해제한 작업은 앱 설정과 관계없이 하지 않습니다. 앱 쪽 설정도 그대로 적용됩니다."
 },
 "nplurals=1; plural=0;");

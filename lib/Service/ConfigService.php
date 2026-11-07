@@ -299,6 +299,49 @@ class ConfigService {
 		$this->setString('app_engines', json_encode($all, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}');
 	}
 
+	/**
+	 * What the administrator lets an app's assistant do (the owner, 2026-11-07): read in the app,
+	 * search the internet, add, change, delete, and the administrators' own operations that act on
+	 * servers or devices. Off by default only for the last.
+	 */
+	public const PERMS = ['read', 'search', 'create', 'update', 'delete', 'admin'];
+	private const PERMS_DEFAULT = ['read' => true, 'search' => true, 'create' => true, 'update' => true, 'delete' => true, 'admin' => false];
+
+	/** @return array<string, bool> */
+	public function getAppPerms(string $app): array {
+		$all = json_decode($this->getString('app_perms', '{}'), true);
+		$mine = is_array($all[$app] ?? null) ? $all[$app] : [];
+		$out = [];
+		foreach (self::PERMS_DEFAULT as $k => $d) {
+			$out[$k] = array_key_exists($k, $mine) ? (bool)$mine[$k] : $d;
+		}
+		return $out;
+	}
+
+	/** @param array<string, mixed> $perms */
+	public function setAppPerms(string $app, array $perms): void {
+		$all = json_decode($this->getString('app_perms', '{}'), true);
+		$all = is_array($all) ? $all : [];
+		$row = [];
+		foreach (self::PERMS as $k) {
+			$row[$k] = array_key_exists($k, $perms) ? filter_var($perms[$k], FILTER_VALIDATE_BOOLEAN) : self::PERMS_DEFAULT[$k];
+		}
+		$all[$app] = $row;
+		$this->setString('app_perms', json_encode($all) ?: '{}');
+	}
+
+	/** The longest additional prompt for every app. */
+	public const COMMON_PROMPT_MAX = 8000;
+
+	/** The administrator's additional prompt for every app ('' = none; the owner, 2026-11-07). */
+	public function getCommonPrompt(): string {
+		return mb_substr(trim($this->getString('common_prompt', '')), 0, self::COMMON_PROMPT_MAX);
+	}
+
+	public function setCommonPrompt(string $text): void {
+		$this->setString('common_prompt', mb_substr(trim(str_replace("\r\n", "\n", $text)), 0, self::COMMON_PROMPT_MAX));
+	}
+
 	/** The longest additional prompt an administrator may give one app. */
 	public const APP_PROMPT_MAX = 4000;
 

@@ -145,6 +145,18 @@ OC.L10N.register(
         "[%n छवियाँ]"
     ],
     "The model every app uses unless it has its own, whatever the command line tool is set to. Pick one from the list, or choose Other to type a model name.": "वह मॉडल जिसे हर ऐप तब उपयोग करता है जब उसका अपना मॉडल न हो, कमांड लाइन टूल की सेटिंग चाहे जो हो। सूची से एक चुनें, या मॉडल का नाम लिखने के लिए \"अन्य\" चुनें।",
-    "Other (type a name)": "अन्य (नाम लिखें)"
+    "Other (type a name)": "अन्य (नाम लिखें)",
+    "Additional prompt for every app": "सभी ऐप के लिए अतिरिक्त प्रॉम्प्ट",
+    "Instructions added to every question from every app, before each app's own additional prompt (an app's own wins where the two differ). For example, rules every answer must keep.": "हर ऐप के हर सवाल में जोड़े जाने वाले निर्देश, ऐप के अपने अतिरिक्त प्रॉम्प्ट से पहले (दोनों में अंतर हो तो ऐप का प्रॉम्प्ट माना जाता है)। उदाहरण के लिए, ऐसे नियम जिनका हर जवाब को पालन करना है।",
+    "{n} / {max} characters": "{n} / {max} अक्षर",
+    "Saved. It is added to every question from now on.": "सहेजा गया। अब से यह हर सवाल में जोड़ा जाएगा।",
+    "Removed.": "हटा दिया गया।",
+    "What the AI may do in this app": "इस ऐप में AI क्या कर सकता है",
+    "Read data in the app": "ऐप का डेटा पढ़ना",
+    "Search the internet": "इंटरनेट पर खोजना",
+    "Change": "बदलना",
+    "Delete": "हटाना",
+    "Administrators' operations on servers and devices": "सर्वर और उपकरणों पर व्यवस्थापक के काम",
+    "Whatever the app's own settings allow, what is unticked here is not done. The app's own settings still apply too.": "यहाँ जिन पर निशान नहीं है, वे काम नहीं होंगे, चाहे ऐप की सेटिंग कुछ भी अनुमति दे। ऐप की अपनी सेटिंग भी लागू रहती है।"
 },
 "nplurals=2; plural=(n != 1);");

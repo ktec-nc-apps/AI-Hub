@@ -62,6 +62,18 @@
 		<div id="tb-def-result" role="status" aria-live="polite"></div>
 	</div>
 
+	<div id="tb-common" class="tb-defaults">
+		<h3><?php p($l->t('Additional prompt for every app')); ?></h3>
+		<p class="settings-hint"><?php p($l->t('Instructions added to every question from every app, before each app\'s own additional prompt (an app\'s own wins where the two differ). For example, rules every answer must keep.')); ?></p>
+		<label class="tb-visually-hidden" for="tb-common-prompt"><?php p($l->t('Additional prompt for every app')); ?></label>
+		<textarea id="tb-common-prompt" rows="8" spellcheck="false"></textarea>
+		<div class="tb-model-row">
+			<span id="tb-common-count" class="settings-hint"></span>
+			<button id="tb-common-save" class="button primary" type="button"><?php p($l->t('Save')); ?></button>
+		</div>
+		<div id="tb-common-result" role="status" aria-live="polite"></div>
+	</div>
+
 	<div class="tb-actions">
 		<button id="tb-fetch" class="button primary" type="button"><?php p($l->t('Load models')); ?></button>
 		<button id="tb-test" class="button" type="button"><?php p($l->t('Test connection')); ?></button>

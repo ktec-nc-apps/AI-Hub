@@ -146,7 +146,19 @@
             "[%n зображення]"
         ],
         "The model every app uses unless it has its own, whatever the command line tool is set to. Pick one from the list, or choose Other to type a model name.": "Модель, яку використовує кожна програма без власної моделі, незалежно від налаштування інструмента командного рядка. Виберіть модель зі списку або виберіть «Інше», щоб ввести назву.",
-        "Other (type a name)": "Інше (ввести назву)"
+        "Other (type a name)": "Інше (ввести назву)",
+        "Additional prompt for every app": "Додатковий промпт для всіх застосунків",
+        "Instructions added to every question from every app, before each app's own additional prompt (an app's own wins where the two differ). For example, rules every answer must keep.": "Вказівки, що додаються до кожного запитання з кожного застосунку, перед додатковим промптом самого застосунку (у разі розбіжності діє промпт застосунку). Наприклад, правила, яких має дотримуватися кожна відповідь.",
+        "{n} / {max} characters": "{n} / {max} символів",
+        "Saved. It is added to every question from now on.": "Збережено. Тепер він додається до кожного запитання.",
+        "Removed.": "Видалено.",
+        "What the AI may do in this app": "Що ШІ може робити в цьому застосунку",
+        "Read data in the app": "Читати дані застосунку",
+        "Search the internet": "Шукати в інтернеті",
+        "Change": "Змінювати",
+        "Delete": "Видаляти",
+        "Administrators' operations on servers and devices": "Дії адміністратора на серверах і пристроях",
+        "Whatever the app's own settings allow, what is unticked here is not done. The app's own settings still apply too.": "Те, що тут не позначено, не виконується, хоч би що дозволяли налаштування застосунку. Налаштування застосунку й далі діють."
     },
     "pluralForm": "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 }

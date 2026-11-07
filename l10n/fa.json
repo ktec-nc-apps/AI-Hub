@@ -144,7 +144,19 @@
             "[%n تصویر]"
         ],
         "The model every app uses unless it has its own, whatever the command line tool is set to. Pick one from the list, or choose Other to type a model name.": "مدلی که هر برنامهٔ بدون مدل اختصاصی به کار می‌برد، فارغ از تنظیم ابزار خط فرمان. یکی را از فهرست انتخاب کنید، یا «سایر» را بزنید تا نام مدل را بنویسید.",
-        "Other (type a name)": "سایر (نوشتن نام)"
+        "Other (type a name)": "سایر (نوشتن نام)",
+        "Additional prompt for every app": "پرامپت افزودهٔ همهٔ برنامه‌ها",
+        "Instructions added to every question from every app, before each app's own additional prompt (an app's own wins where the two differ). For example, rules every answer must keep.": "دستورهایی که به هر پرسش از هر برنامه افزوده می‌شود، پیش از پرامپت افزودهٔ خود برنامه (اگر با هم فرق داشته باشند، پرامپت برنامه مقدم است). برای نمونه، قاعده‌هایی که هر پاسخ باید رعایت کند.",
+        "{n} / {max} characters": "{n} / {max} نویسه",
+        "Saved. It is added to every question from now on.": "ذخیره شد. از این پس به هر پرسش افزوده می‌شود.",
+        "Removed.": "حذف شد.",
+        "What the AI may do in this app": "کارهایی که هوش مصنوعی در این برنامه مجاز است",
+        "Read data in the app": "خواندن داده‌های برنامه",
+        "Search the internet": "جست‌وجو در اینترنت",
+        "Change": "ویرایش",
+        "Delete": "حذف",
+        "Administrators' operations on servers and devices": "عملیات مدیر روی سرورها و دستگاه‌ها",
+        "Whatever the app's own settings allow, what is unticked here is not done. The app's own settings still apply too.": "آنچه اینجا تیک نخورده انجام نمی‌شود، هرچه تنظیمات برنامه اجازه دهد. تنظیمات خود برنامه هم همچنان اعمال می‌شود."
     },
     "pluralForm": "nplurals=2; plural=(n > 1);"
 }

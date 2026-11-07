@@ -146,6 +146,18 @@ OC.L10N.register(
         "[%n изображений]"
     ],
     "The model every app uses unless it has its own, whatever the command line tool is set to. Pick one from the list, or choose Other to type a model name.": "Модель, которую использует каждое приложение без своей модели, независимо от настройки инструмента командной строки. Выберите модель из списка или выберите «Другое», чтобы ввести название.",
-    "Other (type a name)": "Другое (ввести название)"
+    "Other (type a name)": "Другое (ввести название)",
+    "Additional prompt for every app": "Дополнительный промпт для всех приложений",
+    "Instructions added to every question from every app, before each app's own additional prompt (an app's own wins where the two differ). For example, rules every answer must keep.": "Указания, которые добавляются к каждому вопросу из каждого приложения, перед дополнительным промптом самого приложения (при расхождении действует промпт приложения). Например, правила, которые должен соблюдать каждый ответ.",
+    "{n} / {max} characters": "{n} / {max} символов",
+    "Saved. It is added to every question from now on.": "Сохранено. Теперь он добавляется к каждому вопросу.",
+    "Removed.": "Удалено.",
+    "What the AI may do in this app": "Что ИИ может делать в этом приложении",
+    "Read data in the app": "Читать данные приложения",
+    "Search the internet": "Искать в интернете",
+    "Change": "Изменять",
+    "Delete": "Удалять",
+    "Administrators' operations on servers and devices": "Действия администратора на серверах и устройствах",
+    "Whatever the app's own settings allow, what is unticked here is not done. The app's own settings still apply too.": "То, что здесь не отмечено, не выполняется, что бы ни разрешали настройки приложения. Настройки приложения продолжают действовать."
 },
 "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);");

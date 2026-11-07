@@ -19,6 +19,7 @@ return [
 		['name' => 'tool#setModel', 'url' => '/tools/model', 'verb' => 'POST'],
 		['name' => 'tool#defaults', 'url' => '/tools/defaults', 'verb' => 'GET'],
 		['name' => 'tool#setDefaults', 'url' => '/tools/defaults', 'verb' => 'POST'],
+		['name' => 'tool#setCommonPrompt', 'url' => '/tools/common-prompt', 'verb' => 'POST'],
 		// the apps that connect, each with its own choice of AI and model
 		['name' => 'tool#apps', 'url' => '/tools/apps', 'verb' => 'GET'],
 		// the apps that declare AI-Hub support (appinfo/ai-hub.json) and are not listed yet

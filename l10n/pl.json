@@ -146,7 +146,19 @@
             "[%n obrazu]"
         ],
         "The model every app uses unless it has its own, whatever the command line tool is set to. Pick one from the list, or choose Other to type a model name.": "Model, którego używa każda aplikacja bez własnego, niezależnie od ustawień narzędzia wiersza poleceń. Wybierz model z listy albo wybierz Inny, aby wpisać nazwę modelu.",
-        "Other (type a name)": "Inny (wpisz nazwę)"
+        "Other (type a name)": "Inny (wpisz nazwę)",
+        "Additional prompt for every app": "Dodatkowy prompt dla wszystkich aplikacji",
+        "Instructions added to every question from every app, before each app's own additional prompt (an app's own wins where the two differ). For example, rules every answer must keep.": "Instrukcje dodawane do każdego pytania z każdej aplikacji, przed dodatkowym promptem danej aplikacji (gdy się różnią, obowiązuje prompt aplikacji). Na przykład zasady, których musi przestrzegać każda odpowiedź.",
+        "{n} / {max} characters": "{n} / {max} znaków",
+        "Saved. It is added to every question from now on.": "Zapisano. Od teraz jest dodawany do każdego pytania.",
+        "Removed.": "Usunięto.",
+        "What the AI may do in this app": "Co AI może robić w tej aplikacji",
+        "Read data in the app": "Czytać dane w aplikacji",
+        "Search the internet": "Szukać w internecie",
+        "Change": "Zmieniać",
+        "Delete": "Usuwać",
+        "Administrators' operations on servers and devices": "Operacje administratora na serwerach i urządzeniach",
+        "Whatever the app's own settings allow, what is unticked here is not done. The app's own settings still apply too.": "To, co nie jest tu zaznaczone, nie jest wykonywane, bez względu na ustawienia aplikacji. Ustawienia aplikacji nadal obowiązują."
     },
     "pluralForm": "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);"
 }

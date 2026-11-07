@@ -277,3 +277,13 @@
 #aihub-tools #tb-def-result { margin-top: 6px; padding: 6px 10px; border-inline-start: 4px solid var(--color-border-dark, #999); background-color: var(--color-background-hover); }
 #aihub-tools #tb-def-result.tb-ok { border-inline-start-color: var(--color-success, #46ba61); }
 #aihub-tools #tb-def-result.tb-err { border-inline-start-color: var(--color-error, #e9322d); }
+#aihub-tools #tb-common-prompt { width: 100%; max-width: 700px; box-sizing: border-box; font-family: inherit; min-height: 9em; }
+#aihub-tools #tb-common-result:empty { display: none; }
+#aihub-tools #tb-common-result { margin-top: 6px; padding: 6px 10px; border-inline-start: 4px solid var(--color-border-dark, #999); background-color: var(--color-background-hover); }
+#aihub-tools #tb-common-result.tb-ok { border-inline-start-color: var(--color-success, #46ba61); }
+#aihub-tools #tb-common-result.tb-err { border-inline-start-color: var(--color-error, #e9322d); }
+#aihub-tools #tb-common .tb-model-row { justify-content: space-between; max-width: 700px; margin-top: 6px; }
+#aihub-tools .tb-app-perms { border: 1px solid var(--color-border, #ddd); border-radius: var(--border-radius-large, 8px); padding: 6px 12px 4px; margin: 4px 0 8px; display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: center; }
+#aihub-tools .tb-app-perms legend { font-weight: 600; padding: 0 4px; }
+#aihub-tools .tb-app-perms label { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+#aihub-tools .tb-app-perms .settings-hint { flex-basis: 100%; margin: 2px 0; }

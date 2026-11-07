@@ -146,7 +146,19 @@
             "[%n obrázků]"
         ],
         "The model every app uses unless it has its own, whatever the command line tool is set to. Pick one from the list, or choose Other to type a model name.": "Model, který používá každá aplikace bez vlastního modelu, bez ohledu na nastavení nástroje příkazového řádku. Vyberte model ze seznamu, nebo zvolte Jiný a napište název modelu.",
-        "Other (type a name)": "Jiný (napište název)"
+        "Other (type a name)": "Jiný (napište název)",
+        "Additional prompt for every app": "Doplňující prompt pro všechny aplikace",
+        "Instructions added to every question from every app, before each app's own additional prompt (an app's own wins where the two differ). For example, rules every answer must keep.": "Pokyny přidávané ke každé otázce z každé aplikace, před doplňujícím promptem dané aplikace (pokud se liší, platí prompt aplikace). Například pravidla, která musí dodržet každá odpověď.",
+        "{n} / {max} characters": "{n} / {max} znaků",
+        "Saved. It is added to every question from now on.": "Uloženo. Od teď se přidává ke každé otázce.",
+        "Removed.": "Odstraněno.",
+        "What the AI may do in this app": "Co smí AI v této aplikaci dělat",
+        "Read data in the app": "Číst data v aplikaci",
+        "Search the internet": "Hledat na internetu",
+        "Change": "Měnit",
+        "Delete": "Mazat",
+        "Administrators' operations on servers and devices": "Operace správce na serverech a zařízeních",
+        "Whatever the app's own settings allow, what is unticked here is not done. The app's own settings still apply too.": "Co zde není zaškrtnuté, se neprovede, ať nastavení aplikace dovolují cokoli. Nastavení aplikace nadále platí."
     },
     "pluralForm": "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 }

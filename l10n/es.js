@@ -145,6 +145,18 @@ OC.L10N.register(
         "[%n imágenes]"
     ],
     "The model every app uses unless it has its own, whatever the command line tool is set to. Pick one from the list, or choose Other to type a model name.": "El modelo que usa cada app que no tenga uno propio, sea cual sea el ajuste de la herramienta de línea de comandos. Elige uno de la lista, o elige Otro para escribir un nombre de modelo.",
-    "Other (type a name)": "Otro (escribir el nombre)"
+    "Other (type a name)": "Otro (escribir el nombre)",
+    "Additional prompt for every app": "Prompt adicional para todas las apps",
+    "Instructions added to every question from every app, before each app's own additional prompt (an app's own wins where the two differ). For example, rules every answer must keep.": "Instrucciones que se añaden a cada pregunta de cada app, antes del prompt adicional propio de la app (si difieren, prevalece el de la app). Por ejemplo, reglas que toda respuesta debe cumplir.",
+    "{n} / {max} characters": "{n} / {max} caracteres",
+    "Saved. It is added to every question from now on.": "Guardado. Se añade a cada pregunta a partir de ahora.",
+    "Removed.": "Eliminado.",
+    "What the AI may do in this app": "Lo que la IA puede hacer en esta app",
+    "Read data in the app": "Leer datos de la app",
+    "Search the internet": "Buscar en internet",
+    "Change": "Cambiar",
+    "Delete": "Eliminar",
+    "Administrators' operations on servers and devices": "Operaciones de administración en servidores y dispositivos",
+    "Whatever the app's own settings allow, what is unticked here is not done. The app's own settings still apply too.": "Lo que no esté marcado aquí no se hace, permitan lo que permitan los ajustes de la app. Los ajustes de la app siguen aplicándose."
 },
 "nplurals=2; plural=(n != 1);");

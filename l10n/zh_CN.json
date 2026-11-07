@@ -51,7 +51,7 @@
         "Add an app": "添加应用",
         "Allow the command line option": "允许命令行选项",
         "Allowed users": "允许的用户",
-        "An OpenAI-compatible endpoint covers OpenRouter, DeepSeek, Qwen, Mistral, Groq, OpenAI and local servers such as Ollama.": "OpenAI 兼容端点涵盖了 OpenRouter、DeepSeek、Qwen、Mistral、Groq、OpenAI 本身以及像 Ollama 这样的本地服务器。",
+        "An OpenAI-compatible endpoint covers OpenRouter, DeepSeek, Qwen, Mistral, Groq, OpenAI and local servers such as Ollama.": "OpenAI 兼容端点涵盖了 OpenRouter、DeepSeek、Qwen、Mistral、Groq、OpenAI 以及像 Ollama 这样的本地服务器。",
         "Answers in progress at once, for everyone together": "针对所有人合并计算，同时正在生成的回答数量",
         "Answers in progress at once, per user": "每位用户同时正在生成的回答数量",
         "App": "应用",
@@ -143,7 +143,19 @@
             "[%n 张图片]"
         ],
         "The model every app uses unless it has its own, whatever the command line tool is set to. Pick one from the list, or choose Other to type a model name.": "没有单独设置模型的应用都使用此模型，与命令行工具自身的设置无关。请从列表中选择；列表中没有的模型，可选择“其他”后输入名称。",
-        "Other (type a name)": "其他（输入名称）"
+        "Other (type a name)": "其他（输入名称）",
+        "Additional prompt for every app": "所有应用通用的附加提示词",
+        "Instructions added to every question from every app, before each app's own additional prompt (an app's own wins where the two differ). For example, rules every answer must keep.": "添加到每个应用的每个问题中的指示，位于各应用自己的附加提示词之前（两者不一致时，以应用自己的为准）。例如，每个回答都必须遵守的规则。",
+        "{n} / {max} characters": "{n} / {max} 个字符",
+        "Saved. It is added to every question from now on.": "已保存。从现在起会添加到每个问题中。",
+        "Removed.": "已删除。",
+        "What the AI may do in this app": "AI 在此应用中可以做的事",
+        "Read data in the app": "读取应用中的数据",
+        "Search the internet": "在互联网上搜索",
+        "Change": "修改",
+        "Delete": "删除",
+        "Administrators' operations on servers and devices": "管理员操作（作用于服务器或设备）",
+        "Whatever the app's own settings allow, what is unticked here is not done. The app's own settings still apply too.": "此处未勾选的操作不会执行，无论应用自身的设置如何。应用自身的设置仍然有效。"
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

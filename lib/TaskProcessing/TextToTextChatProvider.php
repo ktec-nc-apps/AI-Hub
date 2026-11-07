@@ -35,9 +35,9 @@ class TextToTextChatProvider extends TextToTextProvider {
 		$system = is_string($input['system_prompt'] ?? null) && trim($input['system_prompt']) !== ''
 			? $input['system_prompt']
 			: 'You are a helpful assistant inside Nextcloud. Answer in the language the person writes in.';
-		$admin = $this->config->getAppPrompt('taskprocessing');
+		$admin = $this->hub->adminPrompts('taskprocessing');
 		if ($admin !== '') {
-			$system .= "\n\n" . HubService::adminPromptBlock($admin);
+			$system .= "\n\n" . $admin;
 		}
 		// The history is a list of texts, the person's and the assistant's in turn,
 		// the person's first.

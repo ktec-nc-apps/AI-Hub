@@ -144,6 +144,18 @@ OC.L10N.register(
         "[%n hình ảnh]"
     ],
     "The model every app uses unless it has its own, whatever the command line tool is set to. Pick one from the list, or choose Other to type a model name.": "Mô hình mà mọi ứng dụng dùng khi không có mô hình riêng, bất kể cài đặt của công cụ dòng lệnh. Chọn từ danh sách, hoặc chọn Khác để nhập tên mô hình.",
-    "Other (type a name)": "Khác (nhập tên)"
+    "Other (type a name)": "Khác (nhập tên)",
+    "Additional prompt for every app": "Prompt bổ sung cho mọi ứng dụng",
+    "Instructions added to every question from every app, before each app's own additional prompt (an app's own wins where the two differ). For example, rules every answer must keep.": "Chỉ dẫn được thêm vào mọi câu hỏi từ mọi ứng dụng, trước prompt bổ sung riêng của ứng dụng (nếu khác nhau, prompt của ứng dụng được ưu tiên). Ví dụ: các quy tắc mà mọi câu trả lời phải tuân theo.",
+    "{n} / {max} characters": "{n} / {max} ký tự",
+    "Saved. It is added to every question from now on.": "Đã lưu. Từ nay sẽ được thêm vào mọi câu hỏi.",
+    "Removed.": "Đã xóa.",
+    "What the AI may do in this app": "Những gì AI được làm trong ứng dụng này",
+    "Read data in the app": "Đọc dữ liệu trong ứng dụng",
+    "Search the internet": "Tìm trên internet",
+    "Change": "Sửa",
+    "Delete": "Xóa",
+    "Administrators' operations on servers and devices": "Thao tác quản trị trên máy chủ và thiết bị",
+    "Whatever the app's own settings allow, what is unticked here is not done. The app's own settings still apply too.": "Những gì không được đánh dấu ở đây sẽ không được làm, bất kể cài đặt của ứng dụng cho phép gì. Cài đặt của ứng dụng vẫn có hiệu lực."
 },
 "nplurals=1; plural=0;");

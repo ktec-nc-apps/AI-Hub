@@ -145,6 +145,18 @@ OC.L10N.register(
         "[%n görsel]"
     ],
     "The model every app uses unless it has its own, whatever the command line tool is set to. Pick one from the list, or choose Other to type a model name.": "Kendi modeli olmayan her uygulamanın kullandığı model; komut satırı aracının ayarından bağımsızdır. Listeden birini seçin ya da model adı yazmak için Diğer’i seçin.",
-    "Other (type a name)": "Diğer (ad yazın)"
+    "Other (type a name)": "Diğer (ad yazın)",
+    "Additional prompt for every app": "Tüm uygulamalar için ek istem",
+    "Instructions added to every question from every app, before each app's own additional prompt (an app's own wins where the two differ). For example, rules every answer must keep.": "Her uygulamadan gelen her soruya, uygulamanın kendi ek isteminden önce eklenen talimatlar (ikisi farklıysa uygulamanınki geçerlidir). Örneğin her yanıtın uyması gereken kurallar.",
+    "{n} / {max} characters": "{n} / {max} karakter",
+    "Saved. It is added to every question from now on.": "Kaydedildi. Bundan sonra her soruya eklenecek.",
+    "Removed.": "Kaldırıldı.",
+    "What the AI may do in this app": "Yapay zekânın bu uygulamada yapabilecekleri",
+    "Read data in the app": "Uygulamadaki verileri okuma",
+    "Search the internet": "İnternette arama",
+    "Change": "Değiştirme",
+    "Delete": "Silme",
+    "Administrators' operations on servers and devices": "Sunucular ve cihazlar üzerinde yönetici işlemleri",
+    "Whatever the app's own settings allow, what is unticked here is not done. The app's own settings still apply too.": "Burada işaretli olmayan işlemler, uygulamanın ayarları ne izin verirse versin yapılmaz. Uygulamanın kendi ayarları da geçerliliğini korur."
 },
 "nplurals=2; plural=(n > 1);");

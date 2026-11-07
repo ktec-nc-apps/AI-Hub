@@ -187,6 +187,8 @@ function config(array $o = []): OCA\AIHub\Service\ConfigService {
 		'getEffort' => '',
 		'getAppEngine' => ['provider' => 'claude', 'mode' => 'api', 'model' => 'claude-test', 'own' => false],
 		'getAppPrompt' => '',
+		'getAppPerms' => ['read' => true, 'search' => true, 'create' => true, 'update' => true, 'delete' => true, 'admin' => false],
+		'getCommonPrompt' => '',
 		'isAllowlistEnabled' => false,
 		'getAllowedUsers' => [],
 		'getAllowedApps' => [],

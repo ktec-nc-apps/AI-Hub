@@ -143,7 +143,19 @@
             "[%n gambar]"
         ],
         "The model every app uses unless it has its own, whatever the command line tool is set to. Pick one from the list, or choose Other to type a model name.": "Model yang dipakai setiap aplikasi yang tidak punya model sendiri, apa pun pengaturan alat baris perintah. Pilih dari daftar, atau pilih Lainnya untuk mengetik nama model.",
-        "Other (type a name)": "Lainnya (ketik nama)"
+        "Other (type a name)": "Lainnya (ketik nama)",
+        "Additional prompt for every app": "Prompt tambahan untuk semua aplikasi",
+        "Instructions added to every question from every app, before each app's own additional prompt (an app's own wins where the two differ). For example, rules every answer must keep.": "Instruksi yang ditambahkan ke setiap pertanyaan dari setiap aplikasi, sebelum prompt tambahan milik aplikasi itu (jika berbeda, yang berlaku milik aplikasi). Misalnya, aturan yang harus dipatuhi setiap jawaban.",
+        "{n} / {max} characters": "{n} / {max} karakter",
+        "Saved. It is added to every question from now on.": "Tersimpan. Mulai sekarang ditambahkan ke setiap pertanyaan.",
+        "Removed.": "Dihapus.",
+        "What the AI may do in this app": "Yang boleh dilakukan AI di aplikasi ini",
+        "Read data in the app": "Membaca data di aplikasi",
+        "Search the internet": "Mencari di internet",
+        "Change": "Mengubah",
+        "Delete": "Menghapus",
+        "Administrators' operations on servers and devices": "Operasi administrator pada server dan perangkat",
+        "Whatever the app's own settings allow, what is unticked here is not done. The app's own settings still apply too.": "Yang tidak dicentang di sini tidak dilakukan, apa pun yang diizinkan pengaturan aplikasi. Pengaturan aplikasi tetap berlaku."
     },
     "pluralForm": "nplurals=1; plural=0;"
 }

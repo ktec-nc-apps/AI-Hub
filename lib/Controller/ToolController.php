@@ -134,7 +134,19 @@ class ToolController extends Controller {
 			'effort' => $this->config->getEffort(),
 			'efforts' => ConfigService::EFFORTS,
 			'known' => $known,
+			'prompt' => $this->config->getCommonPrompt(),
+			'promptMax' => ConfigService::COMMON_PROMPT_MAX,
 		]);
+	}
+
+	/** The additional prompt for every app (the owner, 2026-11-07); '' removes it. */
+	#[AuthorizedAdminSetting(settings: AdminTools::class)]
+	public function setCommonPrompt(string $prompt = ''): JSONResponse {
+		if (mb_strlen($prompt) > ConfigService::COMMON_PROMPT_MAX) {
+			return new JSONResponse(['ok' => false, 'detail' => $this->l->t('The additional prompt is longer than %s characters.', [(string)ConfigService::COMMON_PROMPT_MAX])], Http::STATUS_BAD_REQUEST);
+		}
+		$this->config->setCommonPrompt($prompt);
+		return new JSONResponse(['ok' => true, 'prompt' => $this->config->getCommonPrompt()]);
 	}
 
 	#[AuthorizedAdminSetting(settings: AdminTools::class)]
@@ -233,7 +245,7 @@ class ToolController extends Controller {
 
 	/** Give one app its own AI and model (empty strings = the server-wide choice). */
 	#[AuthorizedAdminSetting(settings: AdminTools::class)]
-	public function setApp(string $app, string $provider = '', string $mode = '', string $model = '', ?string $prompt = null): JSONResponse {
+	public function setApp(string $app, string $provider = '', string $mode = '', string $model = '', ?string $prompt = null, ?array $perms = null): JSONResponse {
 		if (!self::validApp($app)) {
 			return new JSONResponse(['ok' => false, 'detail' => $this->l->t('That is not a valid app id.')], Http::STATUS_BAD_REQUEST);
 		}
@@ -246,6 +258,9 @@ class ToolController extends Controller {
 		$this->config->setAppEngine($app, $provider, $mode, $model);
 		if ($prompt !== null) {
 			$this->config->setAppPrompt($app, $prompt);
+		}
+		if ($perms !== null) {
+			$this->config->setAppPerms($app, $perms);
 		}
 		foreach ($this->listApps() as $row) {
 			if ($row['id'] === $app) {
@@ -364,6 +379,7 @@ class ToolController extends Controller {
 				'seen' => $seen[$id]['seen'] ?? 0,
 				'own' => $own[$id] ?? ['provider' => '', 'mode' => '', 'model' => ''],
 				'prompt' => $prompts[$id] ?? '',
+				'perms' => $this->config->getAppPerms($id),
 				'gets' => ['provider' => $status['provider'], 'mode' => $status['mode'], 'model' => $status['model']],
 				'ready' => $status['ready'],
 				'reason' => $status['reason'],
